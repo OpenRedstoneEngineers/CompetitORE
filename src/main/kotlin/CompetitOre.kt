@@ -33,7 +33,6 @@ import java.io.File
 import java.lang.Exception
 import java.util.*
 import java.util.logging.Level
-import kotlin.reflect.jvm.internal.impl.resolve.calls.inference.CapturedType
 
 class CompetitOre : JavaPlugin() {
     val confirmStates = mutableMapOf<Player, ConfirmationState>()
