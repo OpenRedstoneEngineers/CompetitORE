@@ -78,6 +78,18 @@ class Sql(
         }
     }
 
+    fun getAllEvents(): List<Event> = transaction(database) {
+        Sql.Event.selectAll().map {
+            Event(
+                it[Sql.Event.id],
+                it[Sql.Event.description],
+                it[Sql.Event.team_size],
+                it[Sql.Event.start].atOffset(zoneOffset).toInstant(),
+                it[Sql.Event.end].atOffset(zoneOffset).toInstant()
+            )
+        }
+    }
+
     fun getEvent(id: Int): Event? = transaction(database) {
         Sql.Event.select {
             Sql.Event.id eq id

@@ -67,6 +67,9 @@ class CompetitOre : JavaPlugin() {
             registerCommand(CompetitionCommand(this@CompetitOre))
             setDefaultExceptionHandler(::handleCommandException, false)
         }
+        if (database.getAllEvents().isEmpty()) {
+            addNextEvent()
+        }
         server.scheduler.scheduleSyncRepeatingTask(this, {
             val event = database.getActiveEvent()
             if (activeEvent == null && event != null) {
@@ -95,6 +98,20 @@ class CompetitOre : JavaPlugin() {
         }
     }
 
+    private fun addNextEvent() {
+        val nextStart = getNextEventStartTime(
+            config[CompetitOreSpec.Event.Start.dayOfWeek],
+            config[CompetitOreSpec.Event.Start.hour],
+            config[CompetitOreSpec.Event.Start.minute]
+        )
+        database.insertEvent(
+            "n/a",
+            nextStart,
+            nextStart.plusHours(config[CompetitOreSpec.Event.length].toLong()),
+            config[CompetitOreSpec.Event.teamSize]
+        )
+    }
+
     private fun stopEvent() {
         val competitors = database.getTeamsByEvent(activeEvent!!.id)!!.flatMap { it.members }
         competitors.forEach {
@@ -108,17 +125,7 @@ class CompetitOre : JavaPlugin() {
             config[CompetitOreSpec.competitorRank]
         )
         activeEvent = null
-        val nextStart = getNextEventStartTime(
-            config[CompetitOreSpec.Event.Start.dayOfWeek],
-            config[CompetitOreSpec.Event.Start.hour],
-            config[CompetitOreSpec.Event.Start.minute]
-        )
-        database.insertEvent(
-            "n/a",
-            nextStart,
-            nextStart.plusHours(config[CompetitOreSpec.Event.length].toLong()),
-            config[CompetitOreSpec.Event.teamSize]
-        )
+        addNextEvent()
     }
 
     private fun ensureCompetitionWorld(name: String) {
