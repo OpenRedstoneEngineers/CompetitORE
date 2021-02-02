@@ -65,10 +65,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 teamPlot.getCenter { center ->
                     player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
                 }
-                competitOre.addRank(
-                    listOf(player.uniqueId),
-                    competitOre.config[CompetitOreSpec.competitorRank]
-                )
+                competitOre.addCompetitorRank(listOf(player.uniqueId))
                 player.sendCompetition("You have joined the team along with ${existingMembers.joinToString(", ")}.")
             }
             is Confirm.Leave -> {
@@ -77,10 +74,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 val teamPlot = team.getPlot(competitOre)
                 teamPlot.deletePlot(null)
                 competitOre.database.deleteTeam(team.id)
-                competitOre.removeRank(
-                    listOf(player.uniqueId),
-                    competitOre.config[CompetitOreSpec.competitorRank]
-                )
+                competitOre.removeCompetitorRank(listOf(player.uniqueId))
                 player.sendCompetition("You have successfully left the competition.")
             }
             is Confirm.StartEvent -> {
@@ -189,10 +183,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             firstUnclaimed.id.getY(),
             listOf(player.uniqueId)
         )
-        competitOre.addRank(
-            listOf(player.uniqueId),
-            competitOre.config[CompetitOreSpec.competitorRank]
-        )
+        competitOre.addCompetitorRank(listOf(player.uniqueId))
         firstUnclaimed.claim(PlotPlayer.wrap(player.uniqueId), false, null)
         firstUnclaimed.setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
         firstUnclaimed.setFlag(FinishedFlag(false))
@@ -225,10 +216,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         teamPlot.alias = (existingMembers - player.name).sorted().joinToString(", ")
         teamPlot.removeTrusted(player.uniqueId)
         competitOre.database.removeFromTeam(team.id, player.uniqueId)
-        competitOre.removeRank(
-            listOf(player.uniqueId),
-            competitOre.config[CompetitOreSpec.competitorRank]
-        )
+        competitOre.removeCompetitorRank(listOf(player.uniqueId))
         player.sendCompetition("You have successfully left the competition.")
     }
     @Subcommand("team")

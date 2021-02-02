@@ -25,7 +25,6 @@ import manager.PlotEvent
 import manager.Sql
 import net.luckperms.api.LuckPerms
 import net.luckperms.api.LuckPermsProvider
-import net.luckperms.api.node.types.InheritanceNode
 import org.bukkit.GameRule
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
@@ -120,10 +119,7 @@ class CompetitOre : JavaPlugin() {
                 player.sendCompetition("Judging will now begin and the results are to be announced shortly.")
             }
         }
-        removeRank(
-            competitors,
-            config[CompetitOreSpec.competitorRank]
-        )
+        removeCompetitorRank(competitors)
         activeEvent = null
         addNextEvent()
     }
@@ -225,12 +221,48 @@ class CompetitOre : JavaPlugin() {
         return true
     }
 
+    fun addCompetitorRank(users: List<UUID>) {
+        val worldEditUsers = users.filterWorldEditUsers(
+            luckPerms.userManager,
+            config[CompetitOreSpec.Ranks.worldeditMinimumRank]
+        )
+        val basicUsers = users.minus(worldEditUsers)
+        addRank(
+            worldEditUsers,
+            config[CompetitOreSpec.Ranks.competitorWorldedit]
+        )
+        addRank(
+            basicUsers,
+            config[CompetitOreSpec.Ranks.competitor]
+        )
+    }
+
+    fun removeCompetitorRank(users: List<UUID>) {
+        val worldEditUsers = users.filterWorldEditUsers(
+            luckPerms.userManager,
+            config[CompetitOreSpec.Ranks.worldeditMinimumRank]
+        )
+        val basicUsers = users.minus(worldEditUsers)
+        removeRank(
+            worldEditUsers,
+            config[CompetitOreSpec.Ranks.competitorWorldedit]
+        )
+        removeRank(
+            basicUsers,
+            config[CompetitOreSpec.Ranks.competitor]
+        )
+    }
+
     fun addRank(users: List<UUID>, rankName: String) {
         val userManager = luckPerms.userManager
         users.forEach {
-            userManager.getUser(it)?.let { user ->
-                user.data().add(InheritanceNode.builder(rankName).build())
-                userManager.saveUser(user)
+            val player = userManager.getUser(it)
+            if (player != null) {
+                player.addGroupNode(userManager, rankName)
+            } else {
+                userManager.loadUser(it).thenApplyAsync { user ->
+                    user.addGroupNode(userManager, rankName)
+                }
             }
         }
     }
@@ -238,9 +270,16 @@ class CompetitOre : JavaPlugin() {
     fun removeRank(users: List<UUID>, rankName: String) {
         val userManager = luckPerms.userManager
         users.forEach {
-            userManager.getUser(it)?.let { user ->
-                user.data().remove(InheritanceNode.builder(rankName).build())
-                userManager.saveUser(user)
+            val player = userManager.getUser(it)
+            if (player != null) {
+                println("User $it loaded, removing rank.")
+                player.removeGroupNode(userManager, rankName)
+            } else {
+                println("User $it not loaded...")
+                userManager.loadUser(it).thenApplyAsync { user ->
+                    println("User $it loaded, removing rank.")
+                    user.removeGroupNode(userManager, rankName)
+                }
             }
         }
     }

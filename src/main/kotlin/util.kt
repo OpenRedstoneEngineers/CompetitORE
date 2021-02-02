@@ -4,6 +4,10 @@ import com.sk89q.worldedit.util.formatting.text.format.TextColor
 import com.sk89q.worldedit.util.formatting.text.format.TextDecoration
 import entity.Event
 import entity.Team
+import net.luckperms.api.model.user.User
+import net.luckperms.api.model.user.UserManager
+import net.luckperms.api.node.types.InheritanceNode
+import net.luckperms.api.query.QueryOptions
 import org.bukkit.entity.Player
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -108,4 +112,24 @@ fun getNextEventStartTime(dayOfWeek: String, hour: Int, minute: Int): LocalDateT
     } else {
         firstFriday
     }
+}
+
+fun List<UUID>.filterWorldEditUsers(userManager: UserManager, rankName: String) = this.filter {
+    val luckUser = userManager.getUser(it) ?: return@filter false
+    luckUser.getInheritedGroups(QueryOptions.nonContextual()).firstOrNull { group ->
+        group.name == rankName
+    }?.let {
+        return@filter true
+    }
+    false
+}
+
+fun User.removeGroupNode(userManager: UserManager, name: String) {
+    this.data().remove(InheritanceNode.builder(name).build())
+    userManager.saveUser(this)
+}
+
+fun User.addGroupNode(userManager: UserManager, name: String) {
+    this.data().add(InheritanceNode.builder(name).build())
+    userManager.saveUser(this)
 }

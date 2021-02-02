@@ -3,7 +3,13 @@ package entity
 import com.uchuhimo.konf.ConfigSpec
 
 object CompetitOreSpec : ConfigSpec("") {
-    val competitorRank by optional("competitor_rank")
+    object Ranks: ConfigSpec() {
+        val competitor by optional("competitor_set")
+        val competitorWorldedit by optional("competitor_worldedit_set")
+        val competitionHost by optional("competition_host_set")
+        val competitionJudge by optional("competition_judge_set")
+        val worldeditMinimumRank by optional("builder")
+    }
     object CompetitorDatabase : ConfigSpec() {
         val username by optional("comptest")
         val password by optional("comptest")
