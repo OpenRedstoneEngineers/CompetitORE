@@ -272,6 +272,43 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @Subcommand("event")
     @CommandPermission("competition.manage")
     inner class Event: BaseCommand() {
+        @Subcommand("judges")
+        inner class Judge: BaseCommand() {
+            @Subcommand("add")
+            @CommandCompletion("@players")
+            fun add(player: Player, @Single target: String) {
+                val targetPlayer = competitOre.server.getPlayer(target) ?:
+                    throw CompetitOreException("Player $target is offline.")
+                competitOre.addRank(
+                    listOf(targetPlayer.uniqueId),
+                    competitOre.config[CompetitOreSpec.Ranks.competitionJudge]
+                )
+                player.sendCompetition("Player $target has been added to judging.")
+            }
+            @Subcommand("remove")
+            @CommandCompletion("@players")
+            fun remove(player: Player, @Single target: String) {
+                competitOre.server.offlinePlayers.firstOrNull {
+                    it.name == target
+                }?.let {
+                    competitOre.removeRank(
+                        listOf(it.uniqueId),
+                        competitOre.config[CompetitOreSpec.Ranks.competitionJudge]
+                    )
+                    player.sendCompetition("Player $target has been removed from judging.")
+                } ?: player.sendCompetition("Player $target is not recognized by the server.")
+            }
+            @Subcommand("clear")
+            fun clear(player: Player) {
+                competitOre.removeRank(
+                    competitOre.luckPerms.userManager.loadedUsers.map { it.uniqueId },
+                    competitOre.config[CompetitOreSpec.Ranks.competitionJudge]
+                )
+                player.sendCompetition("Judges have been cleared.")
+                player.sendCompetition("Note: the clearing may have been incomplete.")
+                player.sendCompetition("Run \"/lp group ${competitOre.config[CompetitOreSpec.Ranks.competitionJudge]} listmembers\" for any unresolved players.")
+            }
+        }
         @Subcommand("start")
         fun start(player: Player) {
             if (competitOre.activeEvent != null) {
