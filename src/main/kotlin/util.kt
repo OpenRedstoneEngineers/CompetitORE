@@ -26,19 +26,22 @@ fun Instant.prettyPrint(offset: ZoneOffset = ZoneOffset.ofHours(-5)): String {
 }
 
 fun Instant.countdown(to: Instant): String {
-    val duration = Duration.between(this, to)
-    val days = duration.toDaysPart()
-    val hours = duration.toHoursPart()
-    val minutes = duration.toMinutesPart()
-    val seconds = duration.toSecondsPart()
+    var duration = Duration.between(this, to)
+    val days = duration.toDays()
+    duration = duration.minusDays(days)
+    val hours = duration.toHours()
+    duration = duration.minusHours(hours)
+    val minutes = duration.toMinutes()
+    duration = duration.minusMinutes(minutes)
+    val seconds = duration.toSeconds()
     return buildString {
         if (days != 0L) {
             append("$days days, ")
         }
-        if (hours != 0) {
+        if (hours != 0L) {
             append("$hours hours, ")
         }
-        if (minutes != 0) {
+        if (minutes != 0L) {
             append("$minutes minutes, ")
         }
         if (this.isEmpty()) {
