@@ -31,7 +31,7 @@ import sendCompetitionError
 import java.time.Duration
 import java.time.Instant
 
-@CommandAlias("competition")
+@CommandAlias("competition|comp")
 @Description("A command to manage competitions")
 class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @Default @CatchUnknown
