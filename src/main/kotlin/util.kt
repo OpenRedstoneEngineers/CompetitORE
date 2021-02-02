@@ -37,7 +37,7 @@ fun Instant.countdown(to: Instant): String {
     duration = duration.minusHours(hours)
     val minutes = duration.toMinutes()
     duration = duration.minusMinutes(minutes)
-    val seconds = duration.toSeconds()
+    val seconds = duration.toMillis() / 1000
     return buildString {
         if (days != 0L) {
             append("$days days, ")
