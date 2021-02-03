@@ -36,13 +36,7 @@ object Sql {
 }
 
 class FinishedFlag(value: Boolean) : BooleanFlag<FinishedFlag>(value, Captions.FLAG_DESC) {
-    override fun flagOf(value: Boolean): FinishedFlag {
-        return if (value) {
-            FinishedFlag(true)
-        } else {
-            FinishedFlag(false)
-        }
-    }
+    override fun flagOf(value: Boolean): FinishedFlag = FinishedFlag(value)
 }
 
 data class Event(

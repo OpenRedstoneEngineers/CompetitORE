@@ -114,15 +114,12 @@ fun getNextEventStartTime(dayOfWeek: String, hour: Int, minute: Int): LocalDateT
     }
 }
 
-fun List<UUID>.filterWorldEditUsers(userManager: UserManager, rankName: String) = this.filter {
-    val luckUser = userManager.getUser(it) ?: return@filter false
-    luckUser.getInheritedGroups(QueryOptions.nonContextual()).firstOrNull { group ->
-        group.name == rankName
-    }?.let {
-        return@filter true
+fun List<UUID>.filterWorldEditUsers(userManager: UserManager, rankName: String) = this
+    .filter { user ->
+        userManager.getUser(user)
+            ?.getInheritedGroups(QueryOptions.nonContextual())
+            ?.any { group -> group.name == rankName } == true
     }
-    false
-}
 
 fun User.removeGroupNode(userManager: UserManager, name: String) {
     this.data().remove(InheritanceNode.builder(name).build())

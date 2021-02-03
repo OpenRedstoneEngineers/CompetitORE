@@ -113,7 +113,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @CommandPermission("competition.view")
     fun view(player: Player, @Single target: String) {
         val applicableEvent = competitOre.activeEvent ?: competitOre.database.getLastOrActiveEvent()
-        val competitorPlot = if (target.contains(',')) {
+        val competitorPlot = if (',' in target) {
             val coordinates = target.split(',')
             if (coordinates.size != 2) throw CompetitOreException("Invalid plot ID")
             val intCoordinates = try {
@@ -140,16 +140,13 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @CommandPermission("competition.list")
     @CommandCompletion("@finished")
     fun list(player: Player, @Optional finished: String?, @Default("1") page: Int) {
-        val isFinished = when {
-            finished == null -> FinishedState.EITHER
-            finished.equals("finished", true) -> FinishedState.FINISHED
-            finished.equals("unfinished", true) -> FinishedState.UNFINISHED
-            finished.equals("either", true) -> FinishedState.EITHER
+        val isFinished = when (finished?.toLowerCase()){
+            "finished" -> FinishedState.FINISHED
+            "unfinished" -> FinishedState.UNFINISHED
             else -> FinishedState.EITHER
         }
         val applicableEvent = competitOre.activeEvent ?: competitOre.database.getLastOrActiveEvent()
         val filtered = competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots.filter {
-            it.flags
             val plotTeam = competitOre.database.getTeamOf(applicableEvent.id, it.id.getX(), it.id.getY())!!
             when (isFinished) {
                 FinishedState.FINISHED -> plotTeam.isFinished
@@ -157,7 +154,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 FinishedState.EITHER -> true
             }
         }
-        val paginationBox = PlotsPaginationBox(filtered, isFinished, "//schematics list ${isFinished.name.toLowerCase()} %page%")
+        val paginationBox = PlotsPaginationBox(filtered, isFinished, "/competition list ${isFinished.name.toLowerCase()} %page%")
         try {
             BukkitAdapter.adapt(player).print(paginationBox.create(page))
         } catch (e: InvalidComponentException) {
@@ -192,13 +189,15 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             listOf(player.uniqueId)
         )
         competitOre.addCompetitorRank(listOf(player.uniqueId))
-        firstUnclaimed.claim(PlotPlayer.wrap(player.uniqueId), false, null)
-        firstUnclaimed.setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
-        firstUnclaimed.setFlag(FinishedFlag(false))
-        firstUnclaimed.alias = player.name
-        firstUnclaimed.addTrusted(player.uniqueId)
-        firstUnclaimed.getCenter { center ->
-            player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+        firstUnclaimed.apply {
+            claim(PlotPlayer.wrap(player.uniqueId), false, null)
+            setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
+            setFlag(FinishedFlag(false))
+            alias = player.name
+            addTrusted(player.uniqueId)
+            getCenter { center ->
+                player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+            }
         }
         player.sendCompetition("You have successfully entered the competition.")
     }
@@ -367,13 +366,10 @@ class CompetitorCompletionHandler(private val competitOre: CompetitOre) :
     CommandCompletions.AsyncCommandCompletionHandler<BukkitCommandCompletionContext> {
         override fun getCompletions(context: BukkitCommandCompletionContext): Collection<String> {
             val applicableEvent = competitOre.activeEvent ?: competitOre.database.getLastOrActiveEvent()
-            return buildSet {
-                competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots.map {
-                    it.trusted.forEach { uuid ->
-                        competitOre.server.getOfflinePlayer(uuid).name?.let(::add)
-                    }
-                }
-            }
+            return competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots
+                .flatMap { it.trusted }
+                .mapNotNull { competitOre.server.getOfflinePlayer(it).name }
+                .toSet()
         }
     }
 
