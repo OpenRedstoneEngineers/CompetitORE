@@ -11,14 +11,15 @@ ORE's competition management plugin.
 | `/competition cancel` | Cancel a confirmation item |
 | `/competition confirm` | Confirm a confirmation item |
 | `/competition enter` | Enter the competition |
+| `/competition event` | [Manage the competition](#event-management) |
 | `/competition info` | Get the next, or current, competition start, or end |
 | `/competition leave` | Leave the competition |
-| `/competition list (finished\|unfinished\|?)` | List competitor plots, finished, unfinished, or both |
+| `/competition list (finished\|unfinished)?` | List competitor plots, finished, unfinished, or both |
 | `/competition reload` | Reload plugin |
-| `/competition team (add\|finish\|unfinish\|` | [Manage your team and submission](###team) |
+| `/competition team (add\|finish\|unfinish\|` | [Manage your team and submission](#team) |
 | `/competition time` | View the time left in the competition |
 | `/competition version` | Return plugin version |
-| `/competition view (competitor)` | Visit a competitors plot, or a plot with coordinates separated by `,` |
+| `/competition view [competitor\|?,?]` | Visit a competitors plot, or a plot with coordinates separated by `,` |
 
 <sub>Note: `/comp` is aliased to `/competition` to make commands more convenient.</sub>
 
@@ -30,9 +31,9 @@ The `team` subcommand provides you three other subcommands: `add`, `finish`, and
 
 `finish` - Submit your team's completed competition build. Labeling your build as completed does not prevent you from making further changes. Builds labeled as completed can be marked uncompleted.
 
-`unfinish` - Unsubmits your submitted competition build. This can be undone by resubmitting.
+`unfinish` - Unsubmits your team's submitted competition build. This can be undone by resubmitting.
 
-<sub>Note: Even for solo competitions where players are not allowed to work together, players would still have to manage their build submission status with the `team` subcommand.</sub>
+<sub>Note: Even for solo competitions where players are not permitted to work together, players would still have to manage their build submission status with the `team` subcommand.</sub>
 
 ### Event Management
 
