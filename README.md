@@ -1,9 +1,10 @@
-#####Build status: ![yes](https://img.shields.io/badge/pp-UP-green)
-#CompetitORE
+##### Build status: ![yes](https://img.shields.io/badge/pp-UP-green)
+
+# CompetitORE
 
 ORE's competition management plugin.
 
-##Full Command Usage
+## Full Command Usage
 
 | Command | Description |
 | --- | --- |
@@ -21,7 +22,7 @@ ORE's competition management plugin.
 
 <sub>Note: `/comp` is aliased to `/competition` to make commands more convenient.</sub>
 
-###Team
+### Team
 
 The `team` subcommand provides you three other subcommands: `add`, `finish`, and `unfinish`:
 
@@ -33,7 +34,7 @@ The `team` subcommand provides you three other subcommands: `add`, `finish`, and
 
 <sub>Note: Even for solo competitions where players are not allowed to work together, players would still have to manage their build submission status with the `team` subcommand.</sub>
 
-###Event Management
+### Event Management
 
 The `event` subcommand is a privileged subcommand that gives Staff and hosts the ability to manage a current or upcoming event.
 
