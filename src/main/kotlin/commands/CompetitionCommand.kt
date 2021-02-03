@@ -42,7 +42,15 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @Subcommand("cancel")
     @CommandAlias("cancel")
     fun cancel(player: Player) {
-        competitOre.confirmStates.remove(player)
+        val state = competitOre.confirmStates.remove(player)
+        val type = when (state?.action) {
+            is Confirm.Invite -> "an invite"
+            Confirm.Leave -> "team leaving"
+            Confirm.StartEvent -> "starting the event"
+            Confirm.StopEvent -> "stopping the event"
+            null -> "nothing, because you have nothing to confirm"
+        }
+        player.sendCompetition("Cancelled $type")
     }
     @Subcommand("confirm")
     @CommandAlias("confirm")
