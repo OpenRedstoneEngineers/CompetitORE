@@ -54,7 +54,8 @@ object CompetitOreSpec : ConfigSpec("") {
     val serverName by optional("competition")
     val gameRules by optional(mapOf(
         "doDaylightCycle" to false,
-        "doWeatherCycle" to false
+        "doWeatherCycle" to false,
+        "keepInventory" to true
     ))
     val timeUntil by optional(mapOf(
         864000 to "12 Hours",
