@@ -25,7 +25,6 @@ import entity.*
 import getPlot
 import key
 import name
-import net.luckperms.api.context.DefaultContextKeys
 import org.bukkit.ChatColor
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerTeleportEvent
@@ -305,9 +304,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 competitOre.addRank(
                     listOf(targetPlayer.uniqueId),
                     competitOre.config[CompetitOreSpec.Ranks.competitionJudge],
-                    competitOre.serverContext.add(
-                        DefaultContextKeys.WORLD_KEY, competitOre.database.getLastOrActiveEvent().key
-                    ).build()
+                    competitOre.competitonContext
                 )
                 player.sendCompetition("Player $target has been added to judging.")
             }
@@ -319,7 +316,8 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 }?.let {
                     competitOre.removeRank(
                         listOf(it.uniqueId),
-                        competitOre.config[CompetitOreSpec.Ranks.competitionJudge]
+                        competitOre.config[CompetitOreSpec.Ranks.competitionJudge],
+                        competitOre.competitonContext
                     )
                     player.sendCompetition("Player $target has been removed from judging.")
                 } ?: player.sendCompetition("Player $target is not recognized by the server.")

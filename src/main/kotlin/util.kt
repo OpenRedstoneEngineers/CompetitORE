@@ -123,8 +123,8 @@ fun List<UUID>.filterWorldEditUsers(userManager: UserManager, rankName: String) 
             ?.any { group -> group.name == rankName } == true
     }
 
-fun User.removeGroupNode(userManager: UserManager, name: String) {
-    this.data().remove(InheritanceNode.builder(name).build())
+fun User.removeGroupNode(userManager: UserManager, name: String, context: ContextSet = ImmutableContextSet.empty()) {
+    this.data().remove(InheritanceNode.builder(name).withContext(context).build())
     userManager.saveUser(this)
 }
 

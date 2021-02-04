@@ -41,6 +41,7 @@ class CompetitOre : JavaPlugin() {
     var plotApi = PlotAPI()
     var config = loadConfig()
     val serverContext get() = ImmutableContextSet.builder().add(DefaultContextKeys.SERVER_KEY, config[CompetitOreSpec.serverName])
+    val competitonContext get() = serverContext.add(DefaultContextKeys.WORLD_KEY, database.getLastOrActiveEvent().key).build()
     val database = Sql(
         config[CompetitOreSpec.CompetitorDatabase.host],
         config[CompetitOreSpec.CompetitorDatabase.port],
@@ -231,18 +232,15 @@ class CompetitOre : JavaPlugin() {
             config[CompetitOreSpec.Ranks.worldeditMinimumRank]
         )
         val basicUsers = users.minus(worldEditUsers)
-        val competitionContextSet = serverContext.add(
-            DefaultContextKeys.WORLD_KEY, activeEvent!!.key
-        ).build()
         addRank(
             worldEditUsers,
             config[CompetitOreSpec.Ranks.competitorWorldedit],
-            competitionContextSet
+            competitonContext
         )
         addRank(
             basicUsers,
             config[CompetitOreSpec.Ranks.competitor],
-            competitionContextSet
+            competitonContext
         )
     }
 
@@ -254,11 +252,13 @@ class CompetitOre : JavaPlugin() {
         val basicUsers = users.minus(worldEditUsers)
         removeRank(
             worldEditUsers,
-            config[CompetitOreSpec.Ranks.competitorWorldedit]
+            config[CompetitOreSpec.Ranks.competitorWorldedit],
+            competitonContext
         )
         removeRank(
             basicUsers,
-            config[CompetitOreSpec.Ranks.competitor]
+            config[CompetitOreSpec.Ranks.competitor],
+            competitonContext
         )
     }
 
@@ -276,18 +276,18 @@ class CompetitOre : JavaPlugin() {
         }
     }
 
-    fun removeRank(users: List<UUID>, rankName: String) {
+    fun removeRank(users: List<UUID>, rankName: String, context: ContextSet = ImmutableContextSet.empty()) {
         val userManager = luckPerms.userManager
         users.forEach {
             val player = userManager.getUser(it)
             if (player != null) {
                 println("User $it loaded, removing rank.")
-                player.removeGroupNode(userManager, rankName)
+                player.removeGroupNode(userManager, rankName, context)
             } else {
                 println("User $it not loaded...")
                 userManager.loadUser(it).thenApplyAsync { user ->
                     println("User $it loaded, removing rank.")
-                    user.removeGroupNode(userManager, rankName)
+                    user.removeGroupNode(userManager, rankName, context)
                 }
             }
         }
