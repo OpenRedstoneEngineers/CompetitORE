@@ -12,6 +12,7 @@ ORE's competition management plugin.
 | `/competition confirm` | Confirm a confirmation item |
 | `/competition enter` | Enter the competition |
 | `/competition event` | [Manage the competition](#event-management) |
+| `/competition home` | Teleports you to your competition plot |
 | `/competition info` | Get the next, or current, competition start, or end |
 | `/competition leave` | Leave the competition |
 | `/competition list (finished\|unfinished)?` | List competitor plots, finished, unfinished, or both |

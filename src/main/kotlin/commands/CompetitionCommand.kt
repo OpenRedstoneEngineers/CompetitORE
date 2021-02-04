@@ -108,7 +108,15 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             }
         }.let { player.sendCompetition(it) }
     }
-    @Subcommand("view")
+    @Subcommand("home")
+    @CommandPermission("competition.home")
+    fun home(player: Player, team: entity.Team) {
+        team.getPlot(competitOre).getCenter { center ->
+            player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+        }
+        player.sendCompetition("You have been teleported to your competition plot.")
+    }
+    @Subcommand("view|visit")
     @CommandCompletion("@competitors")
     @CommandPermission("competition.view")
     fun view(player: Player, @Single target: String) {
