@@ -8,6 +8,9 @@ import co.aikar.commands.annotation.*
 import com.plotsquared.bukkit.util.BukkitUtil
 import com.plotsquared.core.player.PlotPlayer
 import com.plotsquared.core.plot.Plot
+import com.plotsquared.core.plot.flag.implementations.BlockBurnFlag
+import com.plotsquared.core.plot.flag.implementations.BlockIgnitionFlag
+import com.plotsquared.core.plot.flag.implementations.ExplosionFlag
 import com.plotsquared.core.plot.flag.implementations.ServerPlotFlag
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldedit.util.formatting.component.InvalidComponentException
@@ -22,6 +25,7 @@ import entity.*
 import getPlot
 import key
 import name
+import net.luckperms.api.context.DefaultContextKeys
 import org.bukkit.ChatColor
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerTeleportEvent
@@ -54,6 +58,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     }
     @Subcommand("confirm")
     @CommandAlias("confirm")
+    @CommandPermission("competition.confirm")
     fun confirm(player: Player) {
         val state = competitOre.confirmStates[player] ?: throw CompetitOreException("You have nothing to confirm.")
         competitOre.confirmStates.remove(player, state)
@@ -200,6 +205,9 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         firstUnclaimed.apply {
             claim(PlotPlayer.wrap(player.uniqueId), false, null)
             setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
+            setFlag(ExplosionFlag.EXPLOSION_TRUE)
+            setFlag(BlockBurnFlag.BLOCK_BURN_TRUE)
+            setFlag(BlockIgnitionFlag.BLOCK_IGNITION_FALSE)
             setFlag(FinishedFlag(false))
             alias = player.name
             addTrusted(player.uniqueId)
@@ -296,7 +304,10 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                     throw CompetitOreException("Player $target is offline.")
                 competitOre.addRank(
                     listOf(targetPlayer.uniqueId),
-                    competitOre.config[CompetitOreSpec.Ranks.competitionJudge]
+                    competitOre.config[CompetitOreSpec.Ranks.competitionJudge],
+                    competitOre.serverContext.add(
+                        DefaultContextKeys.WORLD_KEY, competitOre.database.getLastOrActiveEvent().key
+                    ).build()
                 )
                 player.sendCompetition("Player $target has been added to judging.")
             }

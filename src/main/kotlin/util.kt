@@ -4,6 +4,8 @@ import com.sk89q.worldedit.util.formatting.text.format.TextColor
 import com.sk89q.worldedit.util.formatting.text.format.TextDecoration
 import entity.Event
 import entity.Team
+import net.luckperms.api.context.ContextSet
+import net.luckperms.api.context.ImmutableContextSet
 import net.luckperms.api.model.user.User
 import net.luckperms.api.model.user.UserManager
 import net.luckperms.api.node.types.InheritanceNode
@@ -126,7 +128,7 @@ fun User.removeGroupNode(userManager: UserManager, name: String) {
     userManager.saveUser(this)
 }
 
-fun User.addGroupNode(userManager: UserManager, name: String) {
-    this.data().add(InheritanceNode.builder(name).build())
+fun User.addGroupNode(userManager: UserManager, name: String, context: ContextSet = ImmutableContextSet.empty()) {
+    this.data().add(InheritanceNode.builder(name).withContext(context).build())
     userManager.saveUser(this)
 }

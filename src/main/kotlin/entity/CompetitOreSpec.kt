@@ -51,6 +51,7 @@ object CompetitOreSpec : ConfigSpec("") {
             val border by optional(true)
         }
     }
+    val serverName by optional("competition")
     val gameRules by optional(mapOf(
         "doDaylightCycle" to false,
         "doWeatherCycle" to false

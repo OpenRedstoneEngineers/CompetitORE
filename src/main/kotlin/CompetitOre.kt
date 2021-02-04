@@ -25,6 +25,9 @@ import manager.PlotEvent
 import manager.Sql
 import net.luckperms.api.LuckPerms
 import net.luckperms.api.LuckPermsProvider
+import net.luckperms.api.context.ContextSet
+import net.luckperms.api.context.DefaultContextKeys
+import net.luckperms.api.context.ImmutableContextSet
 import org.bukkit.GameRule
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
@@ -37,6 +40,7 @@ class CompetitOre : JavaPlugin() {
     val confirmStates = mutableMapOf<Player, ConfirmationState>()
     var plotApi = PlotAPI()
     var config = loadConfig()
+    val serverContext get() = ImmutableContextSet.builder().add(DefaultContextKeys.SERVER_KEY, config[CompetitOreSpec.serverName])
     val database = Sql(
         config[CompetitOreSpec.CompetitorDatabase.host],
         config[CompetitOreSpec.CompetitorDatabase.port],
@@ -227,13 +231,18 @@ class CompetitOre : JavaPlugin() {
             config[CompetitOreSpec.Ranks.worldeditMinimumRank]
         )
         val basicUsers = users.minus(worldEditUsers)
+        val competitionContextSet = serverContext.add(
+            DefaultContextKeys.WORLD_KEY, activeEvent!!.key
+        ).build()
         addRank(
             worldEditUsers,
-            config[CompetitOreSpec.Ranks.competitorWorldedit]
+            config[CompetitOreSpec.Ranks.competitorWorldedit],
+            competitionContextSet
         )
         addRank(
             basicUsers,
-            config[CompetitOreSpec.Ranks.competitor]
+            config[CompetitOreSpec.Ranks.competitor],
+            competitionContextSet
         )
     }
 
@@ -253,15 +262,15 @@ class CompetitOre : JavaPlugin() {
         )
     }
 
-    fun addRank(users: List<UUID>, rankName: String) {
+    fun addRank(users: List<UUID>, rankName: String, context: ContextSet = ImmutableContextSet.empty()) {
         val userManager = luckPerms.userManager
         users.forEach {
             val player = userManager.getUser(it)
             if (player != null) {
-                player.addGroupNode(userManager, rankName)
+                player.addGroupNode(userManager, rankName, context)
             } else {
                 userManager.loadUser(it).thenApplyAsync { user ->
-                    user.addGroupNode(userManager, rankName)
+                    user.addGroupNode(userManager, rankName, context)
                 }
             }
         }
