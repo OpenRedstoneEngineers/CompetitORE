@@ -38,12 +38,19 @@ import java.time.Instant
 @Description("A command to manage competitions")
 class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @Default @CatchUnknown
+    @Subcommand("info")
+    fun info(player: Player) {
+        if (competitOre.activeEvent != null) {
+            player.sendCompetition("${competitOre.activeEvent!!.name} (${competitOre.activeEvent!!.description})")
+        } else {
+            time(player)
+        }
+    }
     @Subcommand("version")
     fun version(player: Player) {
         player.sendCompetition("Version ${competitOre.description.version}")
     }
     @Subcommand("cancel")
-    @CommandAlias("cancel")
     fun cancel(player: Player) {
         val state = competitOre.confirmStates.remove(player)
         val type = when (state?.action) {
@@ -56,7 +63,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         player.sendCompetition("Cancelled $type")
     }
     @Subcommand("confirm")
-    @CommandAlias("confirm")
     @CommandPermission("competition.confirm")
     fun confirm(player: Player) {
         val state = competitOre.confirmStates[player] ?: throw CompetitOreException("You have nothing to confirm.")
@@ -96,21 +102,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 // TODO 1.1
             }
         }
-    }
-    @Subcommand("info")
-    @CommandPermission("competition.info")
-    fun info(player: Player) {
-        val now = Instant.now()
-        if (competitOre.activeEvent != null) {
-            "The ${competitOre.activeEvent!!.name} competition has started. It will end in ${now.countdown(competitOre.activeEvent!!.end)}."
-        } else {
-            val currentEvent = competitOre.database.getNextEvent()
-            if (Duration.between(now, currentEvent.start) > Duration.ofDays(4)) {
-                "The ${currentEvent.name} competition is set to start at ${currentEvent.start.prettyPrint()}."
-            } else {
-                "The ${currentEvent.name} competition is set to start in ${now.countdown(currentEvent.start)}."
-            }
-        }.let { player.sendCompetition(it) }
     }
     @Subcommand("home")
     @CommandPermission("competition.home")
@@ -177,8 +168,17 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @Conditions("ongoingevent")
     @CommandPermission("competition.time")
     fun time(player: Player) {
-        val activeEvent = competitOre.database.getActiveEvent()!!
-        player.sendCompetition("Time left: ${Instant.now().countdown(activeEvent.end)}")
+        val now = Instant.now()
+        if (competitOre.activeEvent != null) {
+            "The ${competitOre.activeEvent!!.name} competition has started. It will end in ${now.countdown(competitOre.activeEvent!!.end)}."
+        } else {
+            val currentEvent = competitOre.database.getNextEvent()
+            if (Duration.between(now, currentEvent.start) > Duration.ofDays(4)) {
+                "The ${currentEvent.name} competition is set to start at ${currentEvent.start.prettyPrint()}."
+            } else {
+                "The ${currentEvent.name} competition is set to start in ${now.countdown(currentEvent.start)}."
+            }
+        }.let { player.sendCompetition(it) }
     }
     @Subcommand("enter")
     @Conditions("ongoingevent")
@@ -187,7 +187,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         if (competitOre.database.getActiveTeamOf(player.uniqueId) != null) {
             throw CompetitOreException("You are already a member of a team.")
         }
-        val currentEvent = competitOre.database.getActiveEvent()!!
         val firstUnclaimed = competitOre.plotApi.getPlotAreas(
             competitOre.activeEvent!!.key
         ).first().getNextFreePlot(
@@ -195,7 +194,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             null
         )
         competitOre.database.insertTeam(
-            currentEvent,
+            competitOre.activeEvent!!,
             firstUnclaimed.id.getX(),
             firstUnclaimed.id.getY(),
             listOf(player.uniqueId)
@@ -367,6 +366,9 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         @Subcommand("description")
         fun description(player: Player, description: String) {
             val currentEvent = competitOre.database.getNextEvent()
+            if (competitOre.activeEvent != null) {
+                competitOre.activeEvent = competitOre.activeEvent!!.copy(description = description)
+            }
             competitOre.database.updateEventDescription(currentEvent.id, description)
             player.sendCompetition("Updated ${currentEvent.name} with description: \"${description}\"")
         }
