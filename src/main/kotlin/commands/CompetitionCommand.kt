@@ -383,9 +383,8 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
 
 class CompetitorCompletionHandler(private val competitOre: CompetitOre) :
     CommandCompletions.AsyncCommandCompletionHandler<BukkitCommandCompletionContext> {
-        override fun getCompletions(context: BukkitCommandCompletionContext): Collection<String> {
-            val applicableEvent = competitOre.activeEvent ?: competitOre.database.getLastOrActiveEvent()
-            return competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots
+        override fun getCompletions(context: BukkitCommandCompletionContext): Collection<String> =
+            competitOre.plotApi.allPlots
                 .flatMap { it.trusted }
                 .mapNotNull { competitOre.server.getOfflinePlayer(it).name }
                 .toSet()
