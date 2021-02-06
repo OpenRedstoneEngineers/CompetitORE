@@ -98,7 +98,7 @@ class CompetitOre : JavaPlugin() {
         activeEvent = event
         server.onlinePlayers.forEach {
             it.sendCompetition("The ${activeEvent!!.name} competition has started!")
-            it.sendCompetition("Join the competition by running \"/competition enter\".")
+            it.sendCompetition("Join the competition by running \"/comp enter\".")
         }
     }
 

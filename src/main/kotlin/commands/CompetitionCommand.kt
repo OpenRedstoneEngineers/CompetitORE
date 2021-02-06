@@ -34,7 +34,7 @@ import sendCompetitionError
 import java.time.Duration
 import java.time.Instant
 
-@CommandAlias("competition|comp")
+@CommandAlias("comp")
 @Description("A command to manage competitions")
 class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @Default @CatchUnknown
@@ -51,6 +51,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         player.sendCompetition("Version ${competitOre.description.version}")
     }
     @Subcommand("cancel")
+    @CommandAlias("cancel")
     fun cancel(player: Player) {
         val state = competitOre.confirmStates.remove(player)
         val type = when (state?.action) {
@@ -63,6 +64,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         player.sendCompetition("Cancelled $type")
     }
     @Subcommand("confirm")
+    @CommandAlias("confirm")
     @CommandPermission("competition.confirm")
     fun confirm(player: Player) {
         val state = competitOre.confirmStates[player] ?: throw CompetitOreException("You have nothing to confirm.")
@@ -157,7 +159,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 FinishedState.EITHER -> true
             }
         }
-        val paginationBox = PlotsPaginationBox(filtered, isFinished, "/competition list ${isFinished.name.toLowerCase()} %page%")
+        val paginationBox = PlotsPaginationBox(filtered, isFinished, "/comp list ${isFinished.name.toLowerCase()} %page%")
         try {
             BukkitAdapter.adapt(player).print(paginationBox.create(page))
         } catch (e: InvalidComponentException) {
@@ -281,7 +283,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             teamPlot.setFlag(FinishedFlag(false))
             competitOre.database.setTeamFinishedState(team.id, false)
             player.sendCompetition("You have labeled your competition build as unfinished.")
-            player.sendCompetition("Once the build is completed, submit it by running \"/competition team finish\".")
+            player.sendCompetition("Once the build is completed, submit it by running \"/comp team finish\".")
         }
     }
     @Subcommand("reload")
@@ -388,7 +390,6 @@ class CompetitorCompletionHandler(private val competitOre: CompetitOre) :
                 .flatMap { it.trusted }
                 .mapNotNull { competitOre.server.getOfflinePlayer(it).name }
                 .toSet()
-        }
     }
 
 class PlotsPaginationBox(private val plots: List<Plot>, finishingState: FinishedState, command: String) :
@@ -411,7 +412,7 @@ class PlotsPaginationBox(private val plots: List<Plot>, finishingState: Finished
         return TextComponent.of("").color(TextColor.GRAY)
             .append(
                 TextComponent.of(" ${number+1} ")
-                    .clickEvent(ClickEvent.runCommand("/competition view ${applicablePlot.id.getX()},${applicablePlot.id.getY()}"))
+                    .clickEvent(ClickEvent.runCommand("/comp view ${applicablePlot.id.getX()},${applicablePlot.id.getY()}"))
                     .hoverEvent(HoverEvent.showText(TextComponent.of("Visit")))
                     .color(TextColor.RED)
             )

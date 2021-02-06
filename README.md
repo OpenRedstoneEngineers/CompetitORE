@@ -8,21 +8,19 @@ ORE's competition management plugin.
 
 | Command | Description |
 | --- | --- |
-| `/competition cancel` | Cancel a confirmation item |
-| `/competition confirm` | Confirm a confirmation item |
-| `/competition enter` | Enter the competition |
-| `/competition event` | [Manage the competition](#event-management) |
-| `/competition home` | Teleports you to your competition plot |
-| `/competition info` | Get the current event information, or time of next event (Default command)|
-| `/competition leave` | Leave the competition |
-| `/competition list (finished\|unfinished)?` | List competitor plots, finished, unfinished, or both |
-| `/competition reload` | Reload plugin |
-| `/competition team (add\|finish\|unfinish\|` | [Manage your team and submission](#team) |
-| `/competition time` | View the time left in the competition |
-| `/competition version` | Return plugin version |
-| `/competition view [competitor\|?,?]` | Visit a competitors plot, or a plot with coordinates separated by `,` |
-
-<sub>Note: `/comp` is aliased to `/competition` to make commands more convenient.</sub>
+| `/comp cancel` | Cancel a confirmation item |
+| `/comp confirm` | Confirm a confirmation item |
+| `/comp enter` | Enter the competition |
+| `/comp event` | [Manage the competition](#event-management) |
+| `/comp home` | Teleports you to your competition plot |
+| `/comp info` | Get the current event information, or time of next event (Default command)|
+| `/comp leave` | Leave the competition |
+| `/comp list (finished\|unfinished)?` | List competitor plots, finished, unfinished, or both |
+| `/comp reload` | Reload plugin |
+| `/comp team (add\|finish\|unfinish\|` | [Manage your team and submission](#team) |
+| `/comp time` | View the time left in the competition |
+| `/comp version` | Return plugin version |
+| `/comp view [competitor\|?,?]` | Visit a competitors plot, or a plot with coordinates separated by `,` |
 
 ### Team
 
