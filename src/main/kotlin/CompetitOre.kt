@@ -37,7 +37,6 @@ import java.util.*
 import java.util.logging.Level
 
 class CompetitOre : JavaPlugin() {
-    val confirmStates = mutableMapOf<Player, ConfirmationState>()
     var plotApi = PlotAPI()
     var config = loadConfig()
     val serverContext get() = ImmutableContextSet.builder().add(DefaultContextKeys.SERVER_KEY, config[CompetitOreSpec.serverName])

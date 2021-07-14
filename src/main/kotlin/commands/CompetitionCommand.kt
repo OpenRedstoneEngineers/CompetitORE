@@ -5,6 +5,7 @@ import co.aikar.commands.BaseCommand
 import co.aikar.commands.BukkitCommandCompletionContext
 import co.aikar.commands.CommandCompletions
 import co.aikar.commands.annotation.*
+import co.aikar.commands.annotation.Optional
 import com.plotsquared.bukkit.util.BukkitUtil
 import com.plotsquared.core.player.PlotPlayer
 import com.plotsquared.core.plot.Plot
@@ -33,11 +34,27 @@ import sendCompetition
 import sendCompetitionError
 import java.time.Duration
 import java.time.Instant
+import java.util.*
+import kotlin.random.Random
 
 @CommandAlias("comp")
 @Description("A command to manage competitions")
 class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
-    @Default @CatchUnknown
+    private data class Confirmation(val key: Int, val description: String, val onConfirm: () -> Unit)
+    private val confirmations = mutableMapOf<UUID, Confirmation>()
+    private fun withConfirmation(player: Player, description: String, onConfirm: () -> Unit) {
+        if (player.uniqueId in confirmations) {
+            throw CompetitOreException("Currently waiting on ${player.name} to confirm a previous action. Try again later.")
+        }
+        val confirm = Confirmation(Random.nextInt(), description, onConfirm)
+        confirmations[player.uniqueId] = confirm
+        competitOre.server.scheduler.runTaskLater(competitOre, Runnable {
+            confirmations.remove(player.uniqueId, confirm)
+        }, 600L)
+    }
+
+    @Default
+    @CatchUnknown
     @Subcommand("info")
     fun info(player: Player) {
         if (competitOre.activeEvent != null) {
@@ -46,65 +63,28 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             time(player)
         }
     }
+
     @Subcommand("version")
     fun version(player: Player) {
         player.sendCompetition("Version ${competitOre.description.version}")
     }
+
     @Subcommand("cancel")
     @CommandAlias("cancel")
     fun cancel(player: Player) {
-        val state = competitOre.confirmStates.remove(player)
-        val type = when (state?.action) {
-            is Confirm.Invite -> "an invite"
-            Confirm.Leave -> "team leaving"
-            Confirm.StartEvent -> "starting the event"
-            Confirm.StopEvent -> "stopping the event"
-            null -> "nothing, because you have nothing to confirm"
-        }
-        player.sendCompetition("Cancelled $type")
+        val description =
+            confirmations.remove(player.uniqueId)?.description ?: "nothing, because you have nothing to confirm"
+        player.sendCompetition("Cancelled $description")
     }
+
     @Subcommand("confirm")
     @CommandAlias("confirm")
     @CommandPermission("competition.confirm")
     fun confirm(player: Player) {
-        val state = competitOre.confirmStates[player] ?: throw CompetitOreException("You have nothing to confirm.")
-        competitOre.confirmStates.remove(player, state)
-        when (val action = state.action) {
-            is Confirm.Invite -> {
-                val teamId = action.teamId
-                val team = competitOre.database.getTeam(teamId)
-                    ?: throw CompetitOreException("Invalid team ID. (How did this happen?)")
-                if (team.members.size == team.event.teamSize) {
-                    throw CompetitOreException("The team you are trying to join has already reached its size limit.")
-                }
-                competitOre.database.addToTeam(teamId, player.uniqueId)
-                val teamPlot = team.getPlot(competitOre)
-                val existingMembers = teamPlot.alias.split(", ")
-                teamPlot.alias = (existingMembers + player.name).sorted().joinToString(", ")
-                teamPlot.addTrusted(player.uniqueId)
-                teamPlot.getCenter { center ->
-                    player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
-                }
-                competitOre.addCompetitorRank(listOf(player.uniqueId))
-                player.sendCompetition("You have joined the team along with ${existingMembers.joinToString(", ")}.")
-            }
-            is Confirm.Leave -> {
-                val team = competitOre.database.getActiveTeamOf(player.uniqueId)
-                    ?: throw CompetitOreException("You are not a member of a team. (How did this happen?)")
-                val teamPlot = team.getPlot(competitOre)
-                teamPlot.deletePlot(null)
-                competitOre.database.deleteTeam(team.id)
-                competitOre.removeCompetitorRank(listOf(player.uniqueId))
-                player.sendCompetition("You have successfully left the competition.")
-            }
-            is Confirm.StartEvent -> {
-                // TODO 1.1
-            }
-            is Confirm.StopEvent -> {
-                // TODO 1.1
-            }
-        }
+        val state = confirmations.remove(player.uniqueId) ?: throw CompetitOreException("You have nothing to confirm.")
+        state.onConfirm()
     }
+
     @Subcommand("home")
     @CommandPermission("competition.home")
     fun home(player: Player, team: entity.Team) {
@@ -113,6 +93,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         }
         player.sendCompetition("You have been teleported to your competition plot.")
     }
+
     @Subcommand("view|visit")
     @CommandCompletion("@competitors")
     @CommandPermission("competition.view")
@@ -141,11 +122,12 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         }
         player.sendCompetition("You are now viewing ${competitorPlot.alias}.")
     }
+
     @Subcommand("list")
     @CommandPermission("competition.list")
     @CommandCompletion("@finished")
     fun list(player: Player, @Optional finished: String?, @Default("1") page: Int) {
-        val isFinished = when (finished?.toLowerCase()){
+        val isFinished = when (finished?.toLowerCase()) {
             "finished" -> FinishedState.FINISHED
             "unfinished" -> FinishedState.UNFINISHED
             else -> FinishedState.EITHER
@@ -159,13 +141,15 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 FinishedState.EITHER -> true
             }
         }
-        val paginationBox = PlotsPaginationBox(filtered, isFinished, "/comp list ${isFinished.name.toLowerCase()} %page%")
+        val paginationBox =
+            PlotsPaginationBox(filtered, isFinished, "/comp list ${isFinished.name.toLowerCase()} %page%")
         try {
             BukkitAdapter.adapt(player).print(paginationBox.create(page))
         } catch (e: InvalidComponentException) {
             player.sendCompetitionError("Invalid page number.")
         }
     }
+
     @Subcommand("time")
     @Conditions("ongoingevent")
     @CommandPermission("competition.time")
@@ -182,6 +166,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             }
         }.let { player.sendCompetition(it) }
     }
+
     @Subcommand("enter")
     @Conditions("ongoingevent")
     @CommandPermission("competition.enter")
@@ -217,16 +202,22 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         }
         player.sendCompetition("You have successfully entered the competition.")
     }
+
     @Subcommand("leave")
     @Conditions("ongoingevent")
     @CommandPermission("competition.leave")
     fun leave(player: Player, team: entity.Team) {
         if (team.members.size == 1) {
-            val confirmLeave = confirmationStateOf(Confirm.Leave)
-            competitOre.confirmStates[player] = confirmLeave
-            competitOre.server.scheduler.runTaskLater(competitOre, Runnable {
-                competitOre.confirmStates.remove(player, confirmLeave)
-            }, 600L)
+            withConfirmation(player, "team leaving") {
+                // NOTE!!! this prevents rare cases where the confirmation outlives the current event or something
+                val team = competitOre.database.getActiveTeamOf(player.uniqueId)
+                    ?: throw CompetitOreException("You are not a member of a team. (How did this happen?)")
+                val teamPlot = team.getPlot(competitOre)
+                teamPlot.deletePlot(null)
+                competitOre.database.deleteTeam(team.id)
+                competitOre.removeCompetitorRank(listOf(player.uniqueId))
+                player.sendCompetition("You have successfully left the competition.")
+            }
             player.sendCompetition("Since you are the last member of your team, your team plot will also be deleted.")
             player.sendCompetition("Type \"/confirm\" to confirm.")
             return
@@ -242,6 +233,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         competitOre.removeCompetitorRank(listOf(player.uniqueId))
         player.sendCompetition("You have successfully left the competition.")
     }
+
     @Subcommand("team")
     @Conditions("ongoingevent")
     @CommandPermission("competition.team")
@@ -252,23 +244,34 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             if (team.members.size == team.event.teamSize) {
                 throw CompetitOreException("Your team is already full.")
             }
-            val targetPlayer = competitOre.server.getPlayer(target) ?:
-                throw CompetitOreException("Player $target is offline.")
+            val targetPlayer =
+                competitOre.server.getPlayer(target) ?: throw CompetitOreException("Player $target is offline.")
             if (competitOre.database.getActiveTeamOf(targetPlayer.uniqueId) != null) {
                 throw CompetitOreException("User $target is already a member of a team.")
             }
-            if (competitOre.confirmStates[targetPlayer] != null) {
-                throw CompetitOreException("Currently waiting on $target to confirm a previous action. Try again later.")
+            withConfirmation(targetPlayer, "an invite") {
+                // NOTE!!! same as leave, tis is to refresh the Team
+                val team = competitOre.database.getTeam(team.id)
+                    ?: throw CompetitOreException("Invalid team ID. (How did this happen?)")
+                if (team.members.size == team.event.teamSize) {
+                    throw CompetitOreException("The team you are trying to join has already reached its size limit.")
+                }
+                competitOre.database.addToTeam(team.id, targetPlayer.uniqueId)
+                val teamPlot = team.getPlot(competitOre)
+                val existingMembers = teamPlot.alias.split(", ")
+                teamPlot.alias = (existingMembers + targetPlayer.name).sorted().joinToString(", ")
+                teamPlot.addTrusted(targetPlayer.uniqueId)
+                teamPlot.getCenter { center ->
+                    targetPlayer.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+                }
+                competitOre.addCompetitorRank(listOf(targetPlayer.uniqueId))
+                targetPlayer.sendCompetition("You have joined the team along with ${existingMembers.joinToString(", ")}.")
             }
-            val confirmInvite = confirmationStateOf(Confirm.Invite(team.id))
-            competitOre.confirmStates[targetPlayer] = confirmInvite
-            competitOre.server.scheduler.runTaskLater(competitOre, Runnable {
-                competitOre.confirmStates.remove(targetPlayer, confirmInvite)
-            }, 600L)
             targetPlayer.sendCompetition("You have been invited by ${player.name} to join their team.")
             targetPlayer.sendCompetition("Type \"/confirm\" to accept the invitation.")
             player.sendCompetition("Invite sent to ${targetPlayer.name} to join your team.")
         }
+
         @Subcommand("finish")
         fun finish(player: Player, team: entity.Team) {
             val teamPlot = team.getPlot(competitOre)
@@ -277,6 +280,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             player.sendCompetition("You have labeled your competition build as finished.")
             player.sendCompetition("You can still make changes to your build during this time.")
         }
+
         @Subcommand("unfinish")
         fun unfinish(player: Player, team: entity.Team) {
             val teamPlot = team.getPlot(competitOre)
@@ -286,22 +290,24 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             player.sendCompetition("Once the build is completed, submit it by running \"/comp team finish\".")
         }
     }
+
     @Subcommand("reload")
     @CommandPermission("competition.reload")
     fun reload(player: Player) {
         competitOre.reload()
         player.sendCompetition("${competitOre.description.name} has been reloaded.")
     }
+
     @Subcommand("event")
     @CommandPermission("competition.manage")
-    inner class Event: BaseCommand() {
+    inner class Event : BaseCommand() {
         @Subcommand("judges")
-        inner class Judge: BaseCommand() {
+        inner class Judge : BaseCommand() {
             @Subcommand("add")
             @CommandCompletion("@players")
             fun add(player: Player, @Single target: String) {
-                val targetPlayer = competitOre.server.getPlayer(target) ?:
-                    throw CompetitOreException("Player $target is offline.")
+                val targetPlayer =
+                    competitOre.server.getPlayer(target) ?: throw CompetitOreException("Player $target is offline.")
                 competitOre.addRank(
                     listOf(targetPlayer.uniqueId),
                     competitOre.config[CompetitOreSpec.Ranks.competitionJudge],
@@ -309,6 +315,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 )
                 player.sendCompetition("Player $target has been added to judging.")
             }
+
             @Subcommand("remove")
             @CommandCompletion("@players")
             fun remove(player: Player, @Single target: String) {
@@ -323,6 +330,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                     player.sendCompetition("Player $target has been removed from judging.")
                 } ?: player.sendCompetition("Player $target is not recognized by the server.")
             }
+
             @Subcommand("clear")
             fun clear(player: Player) {
                 competitOre.removeRank(
@@ -334,30 +342,29 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 player.sendCompetition("Run \"/lp group ${competitOre.config[CompetitOreSpec.Ranks.competitionJudge]} listmembers\" for any unresolved players.")
             }
         }
+
         @Subcommand("start")
         fun start(player: Player) {
             if (competitOre.activeEvent != null) {
                 throw CompetitOreException("There is already an active competition.")
             }
-            val confirmStart = confirmationStateOf(Confirm.StartEvent)
-            competitOre.confirmStates[player] = confirmStart
-            competitOre.server.scheduler.runTaskLater(competitOre, Runnable {
-                competitOre.confirmStates.remove(player, confirmStart)
-            }, 600L)
+            withConfirmation(player, "starting the event") {
+                player.sendCompetition("Actually, start has not been implemented")
+            }
             player.sendCompetition("You have requested to start the next competition.")
-            player.sendCompetition("Type \"/confirm\" to accept the invitation.")
+            player.sendCompetition("Type \"/confirm\" to confirm.")
         }
+
         @Subcommand("stop")
         @Conditions("ongoingevent")
         fun stop(player: Player) {
-            val confirmStop = confirmationStateOf(Confirm.StopEvent)
-            competitOre.confirmStates[player] = confirmStop
-            competitOre.server.scheduler.runTaskLater(competitOre, Runnable {
-                competitOre.confirmStates.remove(player, confirmStop)
-            }, 600L)
+            withConfirmation(player, "stopping the event") {
+                player.sendCompetition("Actually, stop has not been implemented")
+            }
             player.sendCompetition("You have requested to stop the currently active competition.")
-            player.sendCompetition("Type \"/confirm\" to accept the invitation.")
+            player.sendCompetition("Type \"/confirm\" to confirm.")
         }
+
         @Subcommand("teamsize")
         @CommandCompletion("@range:1-5")
         fun teamSize(player: Player, @Single size: Int) {
@@ -365,6 +372,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             competitOre.database.updateEventSize(currentEvent.id, size)
             player.sendCompetition("Updated ${currentEvent.name} with team size: $size")
         }
+
         @Subcommand("description")
         fun description(player: Player, description: String) {
             val currentEvent = competitOre.database.getNextEvent()
@@ -374,6 +382,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             competitOre.database.updateEventDescription(currentEvent.id, description)
             player.sendCompetition("Updated ${currentEvent.name} with description: \"${description}\"")
         }
+
         @Subcommand("winner")
         fun winner(player: Player) {
             //val currentPlot = PlotPlayer.wrap(player.uniqueId).currentPlot
