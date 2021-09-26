@@ -133,7 +133,9 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             else -> FinishedState.EITHER
         }
         val applicableEvent = competitOre.activeEvent ?: competitOre.database.getLastOrActiveEvent()
-        val filtered = competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots.filter {
+        val filtered = competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots
+            .filter { it.owner == UUID(0, 0) }
+            .filter {
             val plotTeam = competitOre.database.getTeamOf(applicableEvent.id, it.id.getX(), it.id.getY())!!
             when (isFinished) {
                 FinishedState.FINISHED -> plotTeam.isFinished
