@@ -6,6 +6,7 @@ import entity.Team
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.CurrentDateTime
 import org.jetbrains.exposed.sql.transactions.transaction
+import pluginZoneOffset
 import toBin
 import toUuid
 import java.time.Instant
@@ -22,7 +23,7 @@ class Sql(
     driver: String = "com.mysql.cj.jdbc.Driver"
 ) {
 
-    private val zoneOffset = ZoneOffset.ofHours(-5)
+    private val zoneOffset = pluginZoneOffset
 
     private val database = Database.connect(
         "jdbc:mysql://${host}:${port}/${database}",

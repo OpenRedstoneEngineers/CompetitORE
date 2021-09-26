@@ -18,11 +18,13 @@ import java.time.temporal.TemporalAdjusters
 import java.util.*
 //import java.time.Duration // 2020 - 12 - 30 : Today, pauk wrote a semicolon here. Never forget.import java.time.temporal.TemporalAdjusters.firstInMonth
 
-val Event.name: String get() = LocalDateTime.ofInstant(start, ZoneOffset.ofHours(-5)).month.name.toLowerCase().capitalize() +
-        " ${LocalDateTime.ofInstant(start, ZoneOffset.ofHours(-5)).year}"
+val pluginZoneOffset: ZoneOffset = ZoneOffset.ofHours(-5)
+
+val Event.name: String get() = LocalDateTime.ofInstant(start, pluginZoneOffset).month.name.toLowerCase().capitalize() +
+        " ${LocalDateTime.ofInstant(start, pluginZoneOffset).year}"
 val Event.key: String get() = name.toLowerCase().replace(' ', '_')
 
-fun Instant.prettyPrint(offset: ZoneOffset = ZoneOffset.ofHours(-5)): String {
+fun Instant.prettyPrint(offset: ZoneOffset = pluginZoneOffset): String {
     val dateTime = LocalDateTime.ofInstant(this, offset)
     return dateTime.month.name.toLowerCase().capitalize() +
         " ${dateTime.dayOfMonth}," +
