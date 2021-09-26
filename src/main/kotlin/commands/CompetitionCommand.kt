@@ -107,13 +107,15 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             } catch (e: NumberFormatException) {
                 throw CompetitOreException("Invalid plot ID")
             }
-            competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots.firstOrNull {
+            competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots
+                .filter { it.owner == UUID(0, 0) }.firstOrNull {
                 it.id.getX() == intCoordinates[0] && it.id.getY() == intCoordinates[1] && it.hasOwner()
             } ?: throw CompetitOreException("That plot does not have an associated team.")
         } else {
             val targetCompetitor = competitOre.server.offlinePlayers.firstOrNull { it.name == target }
                 ?: throw CompetitOreException("Unrecognized user.")
-            competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots.firstOrNull {
+            competitOre.plotApi.getPlotAreas(applicableEvent.key).first().plots
+                .filter { it.owner == UUID(0, 0) }.firstOrNull {
                 it.trusted.contains(targetCompetitor.uniqueId)
             } ?: throw CompetitOreException("That user is not competing or has not competed in the last competition.")
         }
