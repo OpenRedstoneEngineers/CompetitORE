@@ -15,16 +15,21 @@ repositories {
 
     mavenCentral()
     maven {
-        name = "spigotmc-repo"
         url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+        content {
+            includeGroup("org.bukkit")
+            includeGroup("org.spigotmc")
+        }
     }
     maven {
-        name = "sonatype-oss"
-        url = uri("https://oss.sonatype.org/content/groups/public/")
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+    }
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/central")
     }
     maven {
         name = "enginehub-maven"
-        url = uri("http://maven.enginehub.org/repo/")
+        url = uri("https://maven.enginehub.org/repo/")
     }
     maven {
         name = "myndocs-oauth2"
@@ -43,6 +48,7 @@ repositories {
         url = uri("https://libraries.minecraft.net")
     }
     maven {
+        name = "kotlin-exposed"
         url = uri("https://dl.bintray.com/kotlin/exposed")
     }
     maven {
@@ -72,6 +78,7 @@ dependencies {
     compileOnly(group = "com.plotsquared", name = "PlotSquared-Bukkit", version = "5.13.3")
     compileOnly(group = "com.comphenix.protocol", name = "ProtocolLib", version = "4.5.0")
     compileOnly(group = "org.spigotmc", name = "spigot-api", version = "1.16.2-R0.1-SNAPSHOT")
+    compileOnly(group = "org.bukkit", name = "bukkit", version = "1.16.2-R0.1-SNAPSHOT")
     compileOnly(group = "com.sk89q.worldedit", name = "worldedit-bukkit", version = "7.2.0-SNAPSHOT")
 }
 
