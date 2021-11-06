@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.5.31"
     kotlin("kapt") version "1.5.31"
-    id("com.github.johnrengelman.shadow") version "2.0.4"
+    id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
 java {
@@ -95,11 +95,12 @@ dependencies {
 
 tasks.shadowJar {
     relocate("co.aikar.commands", "boater.acf")
+    relocate("com.google.inject", "com.plotsquared.google")
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "16"
         javaParameters = true
         freeCompilerArgs = listOf(
             "-Xopt-in=kotlin.ExperimentalStdlibApi"

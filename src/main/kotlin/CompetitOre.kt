@@ -2,13 +2,12 @@ import co.aikar.commands.BaseCommand
 import co.aikar.commands.CommandIssuer
 import co.aikar.commands.PaperCommandManager
 import co.aikar.commands.RegisteredCommand
+import com.plotsquared.bukkit.util.BukkitSetupUtils
 import com.plotsquared.core.PlotAPI
 import com.plotsquared.core.PlotSquared
 import com.plotsquared.core.configuration.ConfigurationNode
 import com.plotsquared.core.configuration.ConfigurationUtil.*
-import com.plotsquared.core.configuration.caption.Caption
-import com.plotsquared.core.configuration.caption.LocaleHolder
-import com.plotsquared.core.configuration.caption.TranslatableCaption
+import com.plotsquared.core.configuration.caption.StaticCaption
 import com.plotsquared.core.plot.BlockBucket
 import com.plotsquared.core.plot.PlotAreaTerrainType
 import com.plotsquared.core.plot.PlotAreaType
@@ -16,7 +15,6 @@ import com.plotsquared.core.plot.PlotId
 import com.plotsquared.core.plot.flag.GlobalFlagContainer
 import com.plotsquared.core.setup.PlotAreaBuilder
 import com.plotsquared.core.setup.SettingsNodesWrapper
-import com.plotsquared.core.util.SetupUtils
 import com.sk89q.worldedit.world.block.BlockTypes
 import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.source.yaml
@@ -24,7 +22,10 @@ import com.uchuhimo.konf.source.yaml.toYaml
 import commands.CompetitOreException
 import commands.CompetitionCommand
 import commands.CompetitorCompletionHandler
-import entity.*
+import entity.CompetitOreSpec
+import entity.Event
+import entity.FinishedFlag
+import entity.Team
 import manager.PlotEvent
 import manager.Sql
 import net.luckperms.api.LuckPerms
@@ -33,10 +34,8 @@ import net.luckperms.api.context.ContextSet
 import net.luckperms.api.context.DefaultContextKeys
 import net.luckperms.api.context.ImmutableContextSet
 import org.bukkit.GameRule
-import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
-import java.lang.Exception
 import java.util.*
 import java.util.logging.Level
 
@@ -138,21 +137,21 @@ class CompetitOre : JavaPlugin() {
         }
         fun String.block() = BlockBucket(BlockTypes.get("minecraft:$this")!!)
         val configurationNodes = arrayOf(
-            ConfigurationNode("plot.height", config[CompetitOreSpec.PlotSettings.Plot.height], TranslatableCaption.of("setup.plot_height"), INTEGER),
-            ConfigurationNode("plot.size", config[CompetitOreSpec.PlotSettings.Plot.size], TranslatableCaption.of("setup.plot_width"), INTEGER),
-            ConfigurationNode("road.width", config[CompetitOreSpec.PlotSettings.Road.width], TranslatableCaption.of("setup.road_width"), INTEGER),
-            ConfigurationNode("road.height", config[CompetitOreSpec.PlotSettings.Road.height], TranslatableCaption.of("setup.road_height"), INTEGER),
-            ConfigurationNode("wall.height", config[CompetitOreSpec.PlotSettings.Wall.height], TranslatableCaption.of("setup.wall_height"), INTEGER),
-            ConfigurationNode("plot.bedrock", config[CompetitOreSpec.PlotSettings.Plot.bedrock], TranslatableCaption.of("setup.bedrock_boolean"), BOOLEAN),
-            ConfigurationNode("plot.create_signs", config[CompetitOreSpec.PlotSettings.Plot.useSigns], TranslatableCaption.of("setup.bedrock_boolean"), BOOLEAN),
-            ConfigurationNode("wall.place_top_block", config[CompetitOreSpec.PlotSettings.Wall.placeTopBlock], TranslatableCaption.of("setup.top_block_boolean"), BOOLEAN),
-            ConfigurationNode("world.border", config[CompetitOreSpec.PlotSettings.World.border], TranslatableCaption.of("setup.bedrock_boolean"), BOOLEAN),
-            ConfigurationNode("plot.filling", config[CompetitOreSpec.PlotSettings.Plot.filling].block(), TranslatableCaption.of("setup.plot_block"), BLOCK_BUCKET),
-            ConfigurationNode("plot.floor", config[CompetitOreSpec.PlotSettings.Plot.floor].block(), TranslatableCaption.of("setup.plot_block_floor"), BLOCK_BUCKET),
-            ConfigurationNode("wall.block", config[CompetitOreSpec.PlotSettings.Wall.block].block(), TranslatableCaption.of("setup.top_wall_block"), BLOCK_BUCKET),
-            ConfigurationNode("wall.block_claimed", config[CompetitOreSpec.PlotSettings.Wall.blockClaimed].block(), TranslatableCaption.of("setup.wall_block_claimed"), BLOCK_BUCKET),
-            ConfigurationNode("road.block", config[CompetitOreSpec.PlotSettings.Road.block].block(), TranslatableCaption.of("setup.road_block"), BLOCK_BUCKET),
-            ConfigurationNode("wall.filling", config[CompetitOreSpec.PlotSettings.Wall.filling].block(), TranslatableCaption.of("setup.wall_filling_block"), BLOCK_BUCKET)
+            ConfigurationNode("plot.height", config[CompetitOreSpec.PlotSettings.Plot.height], StaticCaption.of(""), INTEGER),
+            ConfigurationNode("plot.size", config[CompetitOreSpec.PlotSettings.Plot.size], StaticCaption.of(""), INTEGER),
+            ConfigurationNode("road.width", config[CompetitOreSpec.PlotSettings.Road.width], StaticCaption.of(""), INTEGER),
+            ConfigurationNode("road.height", config[CompetitOreSpec.PlotSettings.Road.height], StaticCaption.of(""), INTEGER),
+            ConfigurationNode("wall.height", config[CompetitOreSpec.PlotSettings.Wall.height], StaticCaption.of(""), INTEGER),
+            ConfigurationNode("plot.bedrock", config[CompetitOreSpec.PlotSettings.Plot.bedrock], StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("plot.create_signs", config[CompetitOreSpec.PlotSettings.Plot.useSigns], StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("wall.place_top_block", config[CompetitOreSpec.PlotSettings.Wall.placeTopBlock], StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("world.border", config[CompetitOreSpec.PlotSettings.World.border], StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("plot.filling", config[CompetitOreSpec.PlotSettings.Plot.filling].block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("plot.floor", config[CompetitOreSpec.PlotSettings.Plot.floor].block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("wall.block", config[CompetitOreSpec.PlotSettings.Wall.block].block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("wall.block_claimed", config[CompetitOreSpec.PlotSettings.Wall.blockClaimed].block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("road.block", config[CompetitOreSpec.PlotSettings.Road.block].block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("wall.filling", config[CompetitOreSpec.PlotSettings.Wall.filling].block(), StaticCaption.of(""), BLOCK_BUCKET)
         )
         val plotAreaBuilder = PlotAreaBuilder.newBuilder().apply {
             generatorName("PlotSquared")
@@ -164,9 +163,9 @@ class CompetitOre : JavaPlugin() {
             maximumId(PlotId.of(Int.MAX_VALUE, Int.MAX_VALUE))
             settingsNodesWrapper(SettingsNodesWrapper(configurationNodes, null))
         }
-        plotAreaBuilder.settingsNodesWrapper().settingsNodes
-        val manager = SetupUtils.manager
-        manager.setupWorld(plotAreaBuilder)
+        server.scheduler.runTaskLater(this, Runnable {
+            PlotSquared.platform().injector().getInstance(BukkitSetupUtils::class.java).setupWorld(plotAreaBuilder)
+        }, 50L)
         server.scheduler.runTaskLater(this, Runnable {
             val eventWorld = server.getWorld(name)
             if (eventWorld == null) {
