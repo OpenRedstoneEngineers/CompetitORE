@@ -1,8 +1,6 @@
 package entity
 
-import com.plotsquared.core.configuration.Caption
-import com.plotsquared.core.configuration.Captions
-import com.plotsquared.core.plot.flag.PlotFlag
+import com.plotsquared.core.configuration.caption.TranslatableCaption
 import com.plotsquared.core.plot.flag.types.BooleanFlag
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.`java-time`.datetime
@@ -35,7 +33,7 @@ object Sql {
     }
 }
 
-class FinishedFlag(value: Boolean) : BooleanFlag<FinishedFlag>(value, Captions.FLAG_DESC) {
+class FinishedFlag(value: Boolean) : BooleanFlag<FinishedFlag>(value, TranslatableCaption.of("flag.flag_desc")) {
     override fun flagOf(value: Boolean): FinishedFlag = FinishedFlag(value)
 }
 

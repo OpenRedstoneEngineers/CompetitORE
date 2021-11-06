@@ -2,9 +2,13 @@ import co.aikar.commands.BaseCommand
 import co.aikar.commands.CommandIssuer
 import co.aikar.commands.PaperCommandManager
 import co.aikar.commands.RegisteredCommand
-import com.plotsquared.core.api.PlotAPI
+import com.plotsquared.core.PlotAPI
+import com.plotsquared.core.PlotSquared
 import com.plotsquared.core.configuration.ConfigurationNode
 import com.plotsquared.core.configuration.ConfigurationUtil.*
+import com.plotsquared.core.configuration.caption.Caption
+import com.plotsquared.core.configuration.caption.LocaleHolder
+import com.plotsquared.core.configuration.caption.TranslatableCaption
 import com.plotsquared.core.plot.BlockBucket
 import com.plotsquared.core.plot.PlotAreaTerrainType
 import com.plotsquared.core.plot.PlotAreaType
@@ -132,32 +136,32 @@ class CompetitOre : JavaPlugin() {
         if (server.worlds.firstOrNull { it.name == name } != null) {
             return
         }
-        fun String.block() = BlockBucket(BlockTypes.get("minecraft:$this"))
+        fun String.block() = BlockBucket(BlockTypes.get("minecraft:$this")!!)
         val configurationNodes = arrayOf(
-            ConfigurationNode("plot.height", config[CompetitOreSpec.PlotSettings.Plot.height], "Plot height", INTEGER),
-            ConfigurationNode("plot.size", config[CompetitOreSpec.PlotSettings.Plot.size], "Plot width", INTEGER),
-            ConfigurationNode("road.width", config[CompetitOreSpec.PlotSettings.Road.width], "Road width", INTEGER),
-            ConfigurationNode("road.height", config[CompetitOreSpec.PlotSettings.Road.height], "Road height", INTEGER),
-            ConfigurationNode("wall.height", config[CompetitOreSpec.PlotSettings.Wall.height], "Wall height", INTEGER),
-            ConfigurationNode("plot.bedrock", config[CompetitOreSpec.PlotSettings.Plot.bedrock], "Plot bedrock generation", BOOLEAN),
-            ConfigurationNode("plot.create_signs", config[CompetitOreSpec.PlotSettings.Plot.useSigns], "Plot sign usage", BOOLEAN),
-            ConfigurationNode("wall.place_top_block", config[CompetitOreSpec.PlotSettings.Wall.placeTopBlock], "Place or not the top block", BOOLEAN),
-            ConfigurationNode("world.border", config[CompetitOreSpec.PlotSettings.World.border], "World border", BOOLEAN),
-            ConfigurationNode("plot.filling", config[CompetitOreSpec.PlotSettings.Plot.filling].block(), "Plot block", BLOCK_BUCKET),
-            ConfigurationNode("plot.floor", config[CompetitOreSpec.PlotSettings.Plot.floor].block(), "Plot floor block", BLOCK_BUCKET),
-            ConfigurationNode("wall.block", config[CompetitOreSpec.PlotSettings.Wall.block].block(), "Top wall block", BLOCK_BUCKET),
-            ConfigurationNode("wall.block_claimed", config[CompetitOreSpec.PlotSettings.Wall.blockClaimed].block(), "Wall block (claimed)", BLOCK_BUCKET),
-            ConfigurationNode("road.block", config[CompetitOreSpec.PlotSettings.Road.block].block(), "Road block", BLOCK_BUCKET),
-            ConfigurationNode("wall.filling", config[CompetitOreSpec.PlotSettings.Wall.filling].block(), "Wall filling block", BLOCK_BUCKET)
+            ConfigurationNode("plot.height", config[CompetitOreSpec.PlotSettings.Plot.height], TranslatableCaption.of("setup.plot_height"), INTEGER),
+            ConfigurationNode("plot.size", config[CompetitOreSpec.PlotSettings.Plot.size], TranslatableCaption.of("setup.plot_width"), INTEGER),
+            ConfigurationNode("road.width", config[CompetitOreSpec.PlotSettings.Road.width], TranslatableCaption.of("setup.road_width"), INTEGER),
+            ConfigurationNode("road.height", config[CompetitOreSpec.PlotSettings.Road.height], TranslatableCaption.of("setup.road_height"), INTEGER),
+            ConfigurationNode("wall.height", config[CompetitOreSpec.PlotSettings.Wall.height], TranslatableCaption.of("setup.wall_height"), INTEGER),
+            ConfigurationNode("plot.bedrock", config[CompetitOreSpec.PlotSettings.Plot.bedrock], TranslatableCaption.of("setup.bedrock_boolean"), BOOLEAN),
+            ConfigurationNode("plot.create_signs", config[CompetitOreSpec.PlotSettings.Plot.useSigns], TranslatableCaption.of("setup.bedrock_boolean"), BOOLEAN),
+            ConfigurationNode("wall.place_top_block", config[CompetitOreSpec.PlotSettings.Wall.placeTopBlock], TranslatableCaption.of("setup.top_block_boolean"), BOOLEAN),
+            ConfigurationNode("world.border", config[CompetitOreSpec.PlotSettings.World.border], TranslatableCaption.of("setup.bedrock_boolean"), BOOLEAN),
+            ConfigurationNode("plot.filling", config[CompetitOreSpec.PlotSettings.Plot.filling].block(), TranslatableCaption.of("setup.plot_block"), BLOCK_BUCKET),
+            ConfigurationNode("plot.floor", config[CompetitOreSpec.PlotSettings.Plot.floor].block(), TranslatableCaption.of("setup.plot_block_floor"), BLOCK_BUCKET),
+            ConfigurationNode("wall.block", config[CompetitOreSpec.PlotSettings.Wall.block].block(), TranslatableCaption.of("setup.top_wall_block"), BLOCK_BUCKET),
+            ConfigurationNode("wall.block_claimed", config[CompetitOreSpec.PlotSettings.Wall.blockClaimed].block(), TranslatableCaption.of("setup.wall_block_claimed"), BLOCK_BUCKET),
+            ConfigurationNode("road.block", config[CompetitOreSpec.PlotSettings.Road.block].block(), TranslatableCaption.of("setup.road_block"), BLOCK_BUCKET),
+            ConfigurationNode("wall.filling", config[CompetitOreSpec.PlotSettings.Wall.filling].block(), TranslatableCaption.of("setup.wall_filling_block"), BLOCK_BUCKET)
         )
-        val plotAreaBuilder = PlotAreaBuilder().apply {
+        val plotAreaBuilder = PlotAreaBuilder.newBuilder().apply {
             generatorName("PlotSquared")
             plotAreaType(PlotAreaType.NORMAL)
             terrainType(PlotAreaTerrainType.NONE)
             worldName(name)
             areaName(name)
-            minimumId(PlotId(Int.MIN_VALUE, Int.MIN_VALUE))
-            maximumId(PlotId(Int.MAX_VALUE, Int.MAX_VALUE))
+            minimumId(PlotId.of(Int.MIN_VALUE, Int.MIN_VALUE))
+            maximumId(PlotId.of(Int.MAX_VALUE, Int.MAX_VALUE))
             settingsNodesWrapper(SettingsNodesWrapper(configurationNodes, null))
         }
         plotAreaBuilder.settingsNodesWrapper().settingsNodes
