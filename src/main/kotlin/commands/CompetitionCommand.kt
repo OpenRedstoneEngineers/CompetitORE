@@ -181,7 +181,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         val firstUnclaimed = competitOre.plotApi.getPlotAreas(
             competitOre.activeEvent!!.key
         ).first().getNextFreePlot(
-            PlotPlayer.from(player.uniqueId),
+            PlotPlayer.from(player),
             null
         )
         competitOre.database.insertTeam(
@@ -192,7 +192,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         )
         competitOre.addCompetitorRank(listOf(player.uniqueId))
         firstUnclaimed.apply {
-            claim(PlotPlayer.from(player.uniqueId), false, null)
+            claim(PlotPlayer.from(player), false, null)
             setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
             setFlag(ExplosionFlag.EXPLOSION_TRUE)
             setFlag(BlockBurnFlag.BLOCK_BURN_TRUE)
