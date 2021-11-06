@@ -1,9 +1,15 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.4.21"
-    kotlin("kapt") version "1.4.21"
+    kotlin("jvm") version "1.5.31"
+    kotlin("kapt") version "1.5.31"
     id("com.github.johnrengelman.shadow") version "2.0.4"
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(16))
+    }
 }
 
 group = ""
@@ -52,12 +58,17 @@ repositories {
         url = uri("https://dl.bintray.com/kotlin/exposed")
     }
     maven {
-        url = uri("https://mvn.intellectualsites.com/content/groups/public/")
+        name = "IntellectualSites Releases"
+        url = uri("https://mvn.intellectualsites.com/content/repositories/releases/")
+    }
+    maven {
+        name = "IntellectualSites Snapshots"
+        url = uri("https://mvn.intellectualsites.com/content/repositories/snapshots/")
     }
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("stdlib"))
     implementation(group = "co.aikar", name = "acf-paper", version = "0.5.0-SNAPSHOT")
 
     implementation(group = "org.jetbrains", name = "kotlin-css", version = "1.0.0-pre.104-kotlin-1.3.72")
@@ -74,8 +85,8 @@ dependencies {
 //    implementation(group = "com.google.guava", name = "guava", version = "30.1-jre")
 
     compileOnly(group = "net.luckperms", name = "api", version = "5.2")
-    compileOnly(group = "com.plotsquared", name = "PlotSquared-Core", version = "5.13.3")
-    compileOnly(group = "com.plotsquared", name = "PlotSquared-Bukkit", version = "5.13.3")
+    compileOnly(group = "com.plotsquared", name = "PlotSquared-Core", version = "6.1.3")
+    compileOnly(group = "com.plotsquared", name = "PlotSquared-Bukkit", version = "6.1.3")
     compileOnly(group = "com.comphenix.protocol", name = "ProtocolLib", version = "4.5.0")
     compileOnly(group = "org.spigotmc", name = "spigot-api", version = "1.16.2-R0.1-SNAPSHOT")
     compileOnly(group = "org.bukkit", name = "bukkit", version = "1.16.2-R0.1-SNAPSHOT")

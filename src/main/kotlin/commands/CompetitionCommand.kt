@@ -89,7 +89,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
     @CommandPermission("competition.home")
     fun home(player: Player, team: entity.Team) {
         team.getPlot(competitOre).getCenter { center ->
-            player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+            player.teleport(BukkitUtil.adapt(center), PlayerTeleportEvent.TeleportCause.COMMAND)
         }
         player.sendCompetition("You have been teleported to your competition plot.")
     }
@@ -118,7 +118,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             } ?: throw CompetitOreException("That user is not competing or has not competed in the last competition.")
         }
         competitorPlot.getCenter { center ->
-            player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+            player.teleport(BukkitUtil.adapt(center), PlayerTeleportEvent.TeleportCause.COMMAND)
         }
         player.sendCompetition("You are now viewing ${competitorPlot.alias}.")
     }
@@ -179,7 +179,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         val firstUnclaimed = competitOre.plotApi.getPlotAreas(
             competitOre.activeEvent!!.key
         ).first().getNextFreePlot(
-            PlotPlayer.wrap(player.uniqueId),
+            PlotPlayer.from(player.uniqueId),
             null
         )
         competitOre.database.insertTeam(
@@ -190,7 +190,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         )
         competitOre.addCompetitorRank(listOf(player.uniqueId))
         firstUnclaimed.apply {
-            claim(PlotPlayer.wrap(player.uniqueId), false, null)
+            claim(PlotPlayer.from(player.uniqueId), false, null)
             setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
             setFlag(ExplosionFlag.EXPLOSION_TRUE)
             setFlag(BlockBurnFlag.BLOCK_BURN_TRUE)
@@ -199,7 +199,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             alias = player.name
             addTrusted(player.uniqueId)
             getCenter { center ->
-                player.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+                player.teleport(BukkitUtil.adapt(center), PlayerTeleportEvent.TeleportCause.COMMAND)
             }
         }
         player.sendCompetition("You have successfully entered the competition.")
@@ -212,11 +212,11 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         if (team.members.size == 1) {
             withConfirmation(player, "team leaving") {
                 // NOTE!!! this prevents rare cases where the confirmation outlives the current event or something
-                val team = competitOre.database.getActiveTeamOf(player.uniqueId)
+                val activeTeam = competitOre.database.getActiveTeamOf(player.uniqueId)
                     ?: throw CompetitOreException("You are not a member of a team. (How did this happen?)")
-                val teamPlot = team.getPlot(competitOre)
-                teamPlot.deletePlot(null)
-                competitOre.database.deleteTeam(team.id)
+                val teamPlot = activeTeam.getPlot(competitOre)
+                teamPlot.plotModificationManager.deletePlot(PlotPlayer.from(player), null)
+                competitOre.database.deleteTeam(activeTeam.id)
                 competitOre.removeCompetitorRank(listOf(player.uniqueId))
                 player.sendCompetition("You have successfully left the competition.")
             }
@@ -264,7 +264,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 teamPlot.alias = (existingMembers + targetPlayer.name).sorted().joinToString(", ")
                 teamPlot.addTrusted(targetPlayer.uniqueId)
                 teamPlot.getCenter { center ->
-                    targetPlayer.teleport(BukkitUtil.getLocation(center), PlayerTeleportEvent.TeleportCause.COMMAND)
+                    targetPlayer.teleport(BukkitUtil.adapt(center), PlayerTeleportEvent.TeleportCause.COMMAND)
                 }
                 competitOre.addCompetitorRank(listOf(targetPlayer.uniqueId))
                 targetPlayer.sendCompetition("You have joined the team along with ${existingMembers.joinToString(", ")}.")
