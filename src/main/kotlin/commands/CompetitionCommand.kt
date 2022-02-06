@@ -190,7 +190,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             firstUnclaimed.id.getY(),
             listOf(player.uniqueId)
         )
-        competitOre.addCompetitorRank(listOf(player.uniqueId))
         firstUnclaimed.apply {
             claim(PlotPlayer.from(player), false, null)
             setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
@@ -219,7 +218,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 val teamPlot = activeTeam.getPlot(competitOre)
                 teamPlot.plotModificationManager.deletePlot(PlotPlayer.from(player), null)
                 competitOre.database.deleteTeam(activeTeam.id)
-                competitOre.removeCompetitorRank(listOf(player.uniqueId))
                 player.sendCompetition("You have successfully left the competition.")
             }
             player.sendCompetition("Since you are the last member of your team, your team plot will also be deleted.")
@@ -234,7 +232,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         teamPlot.alias = (existingMembers - player.name).sorted().joinToString(", ")
         teamPlot.removeTrusted(player.uniqueId)
         competitOre.database.removeFromTeam(team.id, player.uniqueId)
-        competitOre.removeCompetitorRank(listOf(player.uniqueId))
         player.sendCompetition("You have successfully left the competition.")
     }
 
@@ -268,7 +265,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 teamPlot.getCenter { center ->
                     targetPlayer.teleport(BukkitUtil.adapt(center), PlayerTeleportEvent.TeleportCause.COMMAND)
                 }
-                competitOre.addCompetitorRank(listOf(targetPlayer.uniqueId))
                 targetPlayer.sendCompetition("You have joined the team along with ${existingMembers.joinToString(", ")}.")
             }
             targetPlayer.sendCompetition("You have been invited by ${player.name} to join their team.")
@@ -312,11 +308,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             fun add(player: Player, @Single target: String) {
                 val targetPlayer =
                     competitOre.server.getPlayer(target) ?: throw CompetitOreException("Player $target is offline.")
-                competitOre.addRank(
-                    listOf(targetPlayer.uniqueId),
-                    competitOre.config[CompetitOreSpec.Ranks.competitionJudge],
-                    competitOre.competitonContext
-                )
                 player.sendCompetition("Player $target has been added to judging.")
             }
 
@@ -326,21 +317,12 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
                 competitOre.server.offlinePlayers.firstOrNull {
                     it.name == target
                 }?.let {
-                    competitOre.removeRank(
-                        listOf(it.uniqueId),
-                        competitOre.config[CompetitOreSpec.Ranks.competitionJudge],
-                        competitOre.competitonContext
-                    )
                     player.sendCompetition("Player $target has been removed from judging.")
                 } ?: player.sendCompetition("Player $target is not recognized by the server.")
             }
 
             @Subcommand("clear")
             fun clear(player: Player) {
-                competitOre.removeRank(
-                    competitOre.luckPerms.userManager.loadedUsers.map { it.uniqueId },
-                    competitOre.config[CompetitOreSpec.Ranks.competitionJudge]
-                )
                 player.sendCompetition("Judges have been cleared.")
                 player.sendCompetition("Note: the clearing may have been incomplete.")
                 player.sendCompetition("Run \"/lp group ${competitOre.config[CompetitOreSpec.Ranks.competitionJudge]} listmembers\" for any unresolved players.")

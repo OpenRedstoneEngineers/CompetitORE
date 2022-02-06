@@ -26,6 +26,7 @@ import entity.CompetitOreSpec
 import entity.Event
 import entity.FinishedFlag
 import entity.Team
+import manager.CompetitoreCalculator
 import manager.PlotEvent
 import manager.Sql
 import net.luckperms.api.LuckPerms
@@ -73,6 +74,7 @@ class CompetitOre : JavaPlugin() {
             registerCommand(CompetitionCommand(this@CompetitOre))
             setDefaultExceptionHandler(::handleCommandException, false)
         }
+        luckPerms.contextManager.registerCalculator(CompetitoreCalculator(this))
         if (database.getAllEvents().isEmpty()) {
             addNextEvent()
         }
@@ -87,7 +89,7 @@ class CompetitOre : JavaPlugin() {
     }
 
     override fun onDisable() {
-        //database.destroy()
+
     }
 
     fun reload() {
@@ -126,7 +128,6 @@ class CompetitOre : JavaPlugin() {
                 player.sendCompetition("Judging will now begin and the results are to be announced shortly.")
             }
         }
-        removeCompetitorRank(competitors)
         activeEvent = null
         addNextEvent()
     }
@@ -226,72 +227,5 @@ class CompetitOre : JavaPlugin() {
         val player = server.getPlayer(sender.uniqueId)!!
         player.sendCompetitionError(message)
         return true
-    }
-
-    fun addCompetitorRank(users: List<UUID>) {
-        val worldEditUsers = users.filterWorldEditUsers(
-            luckPerms.userManager,
-            config[CompetitOreSpec.Ranks.worldeditMinimumRank]
-        )
-        val basicUsers = users.minus(worldEditUsers)
-        addRank(
-            worldEditUsers,
-            config[CompetitOreSpec.Ranks.competitorWorldedit],
-            competitonContext
-        )
-        addRank(
-            basicUsers,
-            config[CompetitOreSpec.Ranks.competitor],
-            competitonContext
-        )
-    }
-
-    fun removeCompetitorRank(users: List<UUID>) {
-        val worldEditUsers = users.filterWorldEditUsers(
-            luckPerms.userManager,
-            config[CompetitOreSpec.Ranks.worldeditMinimumRank]
-        )
-        val basicUsers = users.minus(worldEditUsers)
-        removeRank(
-            worldEditUsers,
-            config[CompetitOreSpec.Ranks.competitorWorldedit],
-            competitonContext
-        )
-        removeRank(
-            basicUsers,
-            config[CompetitOreSpec.Ranks.competitor],
-            competitonContext
-        )
-    }
-
-    fun addRank(users: List<UUID>, rankName: String, context: ContextSet = ImmutableContextSet.empty()) {
-        val userManager = luckPerms.userManager
-        users.forEach {
-            val player = userManager.getUser(it)
-            if (player != null) {
-                player.addGroupNode(userManager, rankName, context)
-            } else {
-                userManager.loadUser(it).thenApplyAsync { user ->
-                    user.addGroupNode(userManager, rankName, context)
-                }
-            }
-        }
-    }
-
-    fun removeRank(users: List<UUID>, rankName: String, context: ContextSet = ImmutableContextSet.empty()) {
-        val userManager = luckPerms.userManager
-        users.forEach {
-            val player = userManager.getUser(it)
-            if (player != null) {
-                println("User $it loaded, removing rank.")
-                player.removeGroupNode(userManager, rankName, context)
-            } else {
-                println("User $it not loaded...")
-                userManager.loadUser(it).thenApplyAsync { user ->
-                    println("User $it loaded, removing rank.")
-                    user.removeGroupNode(userManager, rankName, context)
-                }
-            }
-        }
     }
 }
