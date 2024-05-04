@@ -22,11 +22,11 @@ val pluginZoneOffset: ZoneOffset = ZoneOffset.ofHours(-5)
 
 val Event.name: String get() = LocalDateTime.ofInstant(start, pluginZoneOffset).month.name.toLowerCase().capitalize() +
         " ${LocalDateTime.ofInstant(start, pluginZoneOffset).year}"
-val Event.key: String get() = name.toLowerCase().replace(' ', '_')
+val Event.key: String get() = name.lowercase(Locale.getDefault()).replace(' ', '_')
 
 fun Instant.prettyPrint(offset: ZoneOffset = pluginZoneOffset): String {
     val dateTime = LocalDateTime.ofInstant(this, offset)
-    return dateTime.month.name.toLowerCase().capitalize() +
+    return dateTime.month.name.lowercase(Locale.getDefault()).capitalize() +
         " ${dateTime.dayOfMonth}," +
         " ${dateTime.year}" +
         " at ${dateTime.hour}:${dateTime.minute}:${dateTime.second}" +

@@ -2,6 +2,8 @@ import co.aikar.commands.BaseCommand
 import co.aikar.commands.CommandIssuer
 import co.aikar.commands.PaperCommandManager
 import co.aikar.commands.RegisteredCommand
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.plotsquared.bukkit.util.BukkitSetupUtils
 import com.plotsquared.core.PlotAPI
 import com.plotsquared.core.PlotSquared
@@ -16,41 +18,33 @@ import com.plotsquared.core.plot.flag.GlobalFlagContainer
 import com.plotsquared.core.setup.PlotAreaBuilder
 import com.plotsquared.core.setup.SettingsNodesWrapper
 import com.sk89q.worldedit.world.block.BlockTypes
-import com.uchuhimo.konf.Config
-import com.uchuhimo.konf.source.yaml
-import com.uchuhimo.konf.source.yaml.toYaml
 import commands.CompetitOreException
 import commands.CompetitionCommand
 import commands.CompetitorCompletionHandler
-import entity.CompetitOreSpec
-import entity.Event
-import entity.FinishedFlag
-import entity.Team
+import entity.*
 import manager.CompetitoreCalculator
 import manager.PlotEvent
 import manager.Sql
 import net.luckperms.api.LuckPerms
 import net.luckperms.api.LuckPermsProvider
-import net.luckperms.api.context.ContextSet
 import net.luckperms.api.context.DefaultContextKeys
 import net.luckperms.api.context.ImmutableContextSet
 import org.bukkit.GameRule
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
-import java.util.*
 import java.util.logging.Level
 
 class CompetitOre : JavaPlugin() {
     var plotApi = PlotAPI()
     var config = loadConfig()
-    val serverContext get() = ImmutableContextSet.builder().add(DefaultContextKeys.SERVER_KEY, config[CompetitOreSpec.serverName])
+    val serverContext get() = ImmutableContextSet.builder().add(DefaultContextKeys.SERVER_KEY, config.serverName)
     val competitonContext get() = serverContext.add(DefaultContextKeys.WORLD_KEY, database.getLastOrActiveEvent().key).build()
     val database = Sql(
-        config[CompetitOreSpec.CompetitorDatabase.host],
-        config[CompetitOreSpec.CompetitorDatabase.port],
-        config[CompetitOreSpec.CompetitorDatabase.database],
-        config[CompetitOreSpec.CompetitorDatabase.username],
-        config[CompetitOreSpec.CompetitorDatabase.password]
+        config.competitorDatabase.host,
+        config.competitorDatabase.port,
+        config.competitorDatabase.database,
+        config.competitorDatabase.username,
+        config.competitorDatabase.password
     )
     var activeEvent: Event? = null
     lateinit var luckPerms: LuckPerms
@@ -93,7 +87,7 @@ class CompetitOre : JavaPlugin() {
     }
 
     fun reload() {
-        config = loadConfig(reloaded = true)
+        config = loadConfig()
     }
 
     private fun startEvent(event: Event) {
@@ -108,15 +102,15 @@ class CompetitOre : JavaPlugin() {
 
     private fun addNextEvent() {
         val nextStart = getNextEventStartTime(
-            config[CompetitOreSpec.Event.Start.dayOfWeek],
-            config[CompetitOreSpec.Event.Start.hour],
-            config[CompetitOreSpec.Event.Start.minute]
+            config.event.start.dayOfWeek,
+            config.event.start.hour,
+            config.event.start.minute
         )
         database.insertEvent(
             "n/a",
             nextStart,
-            nextStart.plusHours(config[CompetitOreSpec.Event.length].toLong()),
-            config[CompetitOreSpec.Event.teamSize]
+            nextStart.plusHours(config.event.length.toLong()),
+            config.event.teamSize
         )
     }
 
@@ -138,21 +132,21 @@ class CompetitOre : JavaPlugin() {
         }
         fun String.block() = BlockBucket(BlockTypes.get("minecraft:$this")!!)
         val configurationNodes = arrayOf(
-            ConfigurationNode("plot.height", config[CompetitOreSpec.PlotSettings.Plot.height], StaticCaption.of(""), INTEGER),
-            ConfigurationNode("plot.size", config[CompetitOreSpec.PlotSettings.Plot.size], StaticCaption.of(""), INTEGER),
-            ConfigurationNode("road.width", config[CompetitOreSpec.PlotSettings.Road.width], StaticCaption.of(""), INTEGER),
-            ConfigurationNode("road.height", config[CompetitOreSpec.PlotSettings.Road.height], StaticCaption.of(""), INTEGER),
-            ConfigurationNode("wall.height", config[CompetitOreSpec.PlotSettings.Wall.height], StaticCaption.of(""), INTEGER),
-            ConfigurationNode("plot.bedrock", config[CompetitOreSpec.PlotSettings.Plot.bedrock], StaticCaption.of(""), BOOLEAN),
-            ConfigurationNode("plot.create_signs", config[CompetitOreSpec.PlotSettings.Plot.useSigns], StaticCaption.of(""), BOOLEAN),
-            ConfigurationNode("wall.place_top_block", config[CompetitOreSpec.PlotSettings.Wall.placeTopBlock], StaticCaption.of(""), BOOLEAN),
-            ConfigurationNode("world.border", config[CompetitOreSpec.PlotSettings.World.border], StaticCaption.of(""), BOOLEAN),
-            ConfigurationNode("plot.filling", config[CompetitOreSpec.PlotSettings.Plot.filling].block(), StaticCaption.of(""), BLOCK_BUCKET),
-            ConfigurationNode("plot.floor", config[CompetitOreSpec.PlotSettings.Plot.floor].block(), StaticCaption.of(""), BLOCK_BUCKET),
-            ConfigurationNode("wall.block", config[CompetitOreSpec.PlotSettings.Wall.block].block(), StaticCaption.of(""), BLOCK_BUCKET),
-            ConfigurationNode("wall.block_claimed", config[CompetitOreSpec.PlotSettings.Wall.blockClaimed].block(), StaticCaption.of(""), BLOCK_BUCKET),
-            ConfigurationNode("road.block", config[CompetitOreSpec.PlotSettings.Road.block].block(), StaticCaption.of(""), BLOCK_BUCKET),
-            ConfigurationNode("wall.filling", config[CompetitOreSpec.PlotSettings.Wall.filling].block(), StaticCaption.of(""), BLOCK_BUCKET)
+            ConfigurationNode("plot.height", config.plotSettings.plot.height, StaticCaption.of(""), INTEGER),
+            ConfigurationNode("plot.size", config.plotSettings.plot.size, StaticCaption.of(""), INTEGER),
+            ConfigurationNode("road.width", config.plotSettings.road.width, StaticCaption.of(""), INTEGER),
+            ConfigurationNode("road.height", config.plotSettings.road.height, StaticCaption.of(""), INTEGER),
+            ConfigurationNode("wall.height", config.plotSettings.wall.height, StaticCaption.of(""), INTEGER),
+            ConfigurationNode("plot.bedrock", config.plotSettings.plot.bedrock, StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("plot.create_signs", config.plotSettings.plot.useSigns, StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("wall.place_top_block", config.plotSettings.wall.placeTopBlock, StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("world.border", config.plotSettings.world.border, StaticCaption.of(""), BOOLEAN),
+            ConfigurationNode("plot.filling", config.plotSettings.plot.filling.block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("plot.floor", config.plotSettings.plot.floor.block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("wall.block", config.plotSettings.wall.block.block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("wall.block_claimed", config.plotSettings.wall.blockClaimed.block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("road.block", config.plotSettings.road.block.block(), StaticCaption.of(""), BLOCK_BUCKET),
+            ConfigurationNode("wall.filling", config.plotSettings.wall.filling.block(), StaticCaption.of(""), BLOCK_BUCKET)
         )
         val plotAreaBuilder = PlotAreaBuilder.newBuilder().apply {
             generatorName("PlotSquared")
@@ -171,12 +165,12 @@ class CompetitOre : JavaPlugin() {
             val eventWorld = server.getWorld(name)
             if (eventWorld == null) {
                 logger.log(Level.SEVERE, "World $name has not loaded in time to set the following game rules:")
-                config[CompetitOreSpec.gameRules].forEach {
+                config.gameRules.forEach {
                     this.logger.log(Level.INFO, "\t${it.key}: ${it.value}")
                 }
                 return@Runnable
             }
-            config[CompetitOreSpec.gameRules].forEach {
+            config.gameRules.forEach {
                 @Suppress("UNCHECKED_CAST")
                 val gameRule = GameRule.getByName(it.key) as GameRule<Any>?
                 if (gameRule == null) {
@@ -194,22 +188,19 @@ class CompetitOre : JavaPlugin() {
         }, 300L)
     }
 
-    private fun loadConfig(reloaded: Boolean = false): Config {
+    private fun loadConfig(): CompetitOreConfig {
         if (!dataFolder.exists()) {
-            logger.log(Level.INFO, "No resource directory found, creating directory")
+            logger.info("No resource directory found, creating directory")
             dataFolder.mkdir()
         }
         val configFile = File(dataFolder, "config.yml")
-        val loadedConfig = if (!configFile.exists()) {
-            logger.log(Level.INFO, "No config file found, generating from default config.yml")
-            configFile.createNewFile()
-            Config { addSpec(CompetitOreSpec) }
-        } else {
-            Config { addSpec(CompetitOreSpec) }.from.yaml.watchFile(configFile)
-        }
-        loadedConfig.toYaml.toFile(configFile)
-        logger.log(Level.INFO, "${if (reloaded) "Rel" else "L"}oaded config.yml")
-        return loadedConfig
+        // does not overwrite or throw
+        configFile.createNewFile()
+        val mapper = ObjectMapper(YAMLFactory())
+        val tree = mapper.readTree(configFile)
+        val config = mapper.treeToValue(tree, CompetitOreConfig::class.java)
+        logger.info("Loaded config.yml")
+        return config
     }
 
     private fun handleCommandException(

@@ -191,7 +191,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             listOf(player.uniqueId)
         )
         firstUnclaimed.apply {
-            claim(PlotPlayer.from(player), false, null)
+            claim(PlotPlayer.from(player), false, null, true, false)
             setFlag(ServerPlotFlag.SERVER_PLOT_TRUE)
             setFlag(ExplosionFlag.EXPLOSION_TRUE)
             setFlag(BlockBurnFlag.BLOCK_BURN_TRUE)
@@ -325,7 +325,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
             fun clear(player: Player) {
                 player.sendCompetition("Judges have been cleared.")
                 player.sendCompetition("Note: the clearing may have been incomplete.")
-                player.sendCompetition("Run \"/lp group ${competitOre.config[CompetitOreSpec.Ranks.competitionJudge]} listmembers\" for any unresolved players.")
+                player.sendCompetition("Run \"/lp group ${competitOre.config.ranks.competitionJudge} listmembers\" for any unresolved players.")
             }
         }
 
