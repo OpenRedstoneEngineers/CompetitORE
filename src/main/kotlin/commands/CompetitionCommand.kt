@@ -21,7 +21,6 @@ import com.sk89q.worldedit.util.formatting.text.TextComponent
 import com.sk89q.worldedit.util.formatting.text.event.ClickEvent
 import com.sk89q.worldedit.util.formatting.text.event.HoverEvent
 import com.sk89q.worldedit.util.formatting.text.format.TextColor
-import countdown
 import entity.*
 import getPlot
 import key
@@ -29,11 +28,8 @@ import name
 import org.bukkit.ChatColor
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerTeleportEvent
-import prettyPrint
 import sendCompetition
 import sendCompetitionError
-import java.time.Duration
-import java.time.Instant
 import java.util.*
 import kotlin.random.Random
 
@@ -60,7 +56,7 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         if (competitOre.activeEvent != null) {
             player.sendCompetition("${competitOre.activeEvent!!.name} (${competitOre.activeEvent!!.description})")
         } else {
-            time(player)
+            player.sendCompetition("There is no active event.")
         }
     }
 
@@ -152,23 +148,6 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
         } catch (e: InvalidComponentException) {
             player.sendCompetitionError("Invalid page number.")
         }
-    }
-
-    @Subcommand("time")
-    @Conditions("ongoingevent")
-    @CommandPermission("competition.time")
-    fun time(player: Player) {
-        val now = Instant.now()
-        if (competitOre.activeEvent != null) {
-            "The ${competitOre.activeEvent!!.name} competition has started. It will end in ${now.countdown(competitOre.activeEvent!!.end)}."
-        } else {
-            val currentEvent = competitOre.database.getNextEvent()
-            if (Duration.between(now, currentEvent.start) > Duration.ofDays(4)) {
-                "The ${currentEvent.name} competition is set to start at ${currentEvent.start.prettyPrint()}."
-            } else {
-                "The ${currentEvent.name} competition is set to start in ${now.countdown(currentEvent.start)}."
-            }
-        }.let { player.sendCompetition(it) }
     }
 
     @Subcommand("enter")
@@ -331,37 +310,36 @@ class CompetitionCommand(private val competitOre: CompetitOre) : BaseCommand() {
 
         @Subcommand("start")
         fun start(player: Player) {
-            if (competitOre.activeEvent != null) {
-                throw CompetitOreException("There is already an active competition.")
-            }
             withConfirmation(player, "starting the event") {
-                player.sendCompetition("Actually, start has not been implemented")
+                competitOre.startEvent()
             }
             player.sendCompetition("You have requested to start the next competition.")
-            player.sendCompetition("Type \"/confirm\" to confirm.")
+            player.sendCompetition("Run \"/confirm\" to confirm.")
         }
 
         @Subcommand("stop")
         @Conditions("ongoingevent")
         fun stop(player: Player) {
             withConfirmation(player, "stopping the event") {
-                player.sendCompetition("Actually, stop has not been implemented")
+                competitOre.stopEvent()
             }
             player.sendCompetition("You have requested to stop the currently active competition.")
-            player.sendCompetition("Type \"/confirm\" to confirm.")
+            player.sendCompetition("Run \"/confirm\" to confirm.")
         }
 
         @Subcommand("teamsize")
+        @Conditions("ongoingevent")
         @CommandCompletion("@range:1-5")
         fun teamSize(player: Player, @Single size: Int) {
-            val currentEvent = competitOre.database.getNextEvent()
+            val currentEvent = competitOre.database.getActiveEvent()!!  // There is a better way to pass this in but eh.
             competitOre.database.updateEventSize(currentEvent.id, size)
             player.sendCompetition("Updated ${currentEvent.name} with team size: $size")
         }
 
         @Subcommand("description")
+        @Conditions("ongoingevent")
         fun description(player: Player, description: String) {
-            val currentEvent = competitOre.database.getNextEvent()
+            val currentEvent = competitOre.database.getActiveEvent()!!
             if (competitOre.activeEvent != null) {
                 competitOre.activeEvent = competitOre.activeEvent!!.copy(description = description)
             }

@@ -13,7 +13,7 @@ object Sql {
         val description = varchar("event_description", 128)
         val team_size = integer("event_team_size").default(1)
         val start = datetime("event_start")
-        val end = datetime("event_end")
+        val end = datetime("event_end").nullable()
         override val primaryKey = PrimaryKey(id)
     }
 
@@ -42,7 +42,7 @@ data class Event(
     val description: String,
     val teamSize: Int,
     val start: Instant,
-    val end: Instant
+    val end: Instant? = null,
 )
 
 data class Team(

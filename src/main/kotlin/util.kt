@@ -4,61 +4,18 @@ import com.sk89q.worldedit.util.formatting.text.format.TextColor
 import com.sk89q.worldedit.util.formatting.text.format.TextDecoration
 import entity.Event
 import entity.Team
-import net.luckperms.api.context.ContextSet
-import net.luckperms.api.context.ImmutableContextSet
-import net.luckperms.api.model.user.User
-import net.luckperms.api.model.user.UserManager
-import net.luckperms.api.node.types.InheritanceNode
-import net.luckperms.api.query.QueryOptions
 import org.bukkit.entity.Player
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.time.*
-import java.time.temporal.TemporalAdjusters
 import java.util.*
 //import java.time.Duration // 2020 - 12 - 30 : Today, pauk wrote a semicolon here. Never forget.import java.time.temporal.TemporalAdjusters.firstInMonth
 
-val pluginZoneOffset: ZoneOffset = ZoneOffset.ofHours(-5)
+val pluginZoneOffset: ZoneOffset = ZoneOffset.UTC
 
 val Event.name: String get() = LocalDateTime.ofInstant(start, pluginZoneOffset).month.name.toLowerCase().capitalize() +
         " ${LocalDateTime.ofInstant(start, pluginZoneOffset).year}"
-val Event.key: String get() = name.lowercase(Locale.getDefault()).replace(' ', '_')
-
-fun Instant.prettyPrint(offset: ZoneOffset = pluginZoneOffset): String {
-    val dateTime = LocalDateTime.ofInstant(this, offset)
-    return dateTime.month.name.lowercase(Locale.getDefault()).capitalize() +
-        " ${dateTime.dayOfMonth}," +
-        " ${dateTime.year}" +
-        " at ${dateTime.hour}:${dateTime.minute}:${dateTime.second}" +
-        " ${if (offset.id == "Z") "UTC" else offset.id}"
-}
-
-fun Instant.countdown(to: Instant): String {
-    var duration = Duration.between(this, to)
-    val days = duration.toDays()
-    duration = duration.minusDays(days)
-    val hours = duration.toHours()
-    duration = duration.minusHours(hours)
-    val minutes = duration.toMinutes()
-    duration = duration.minusMinutes(minutes)
-    val seconds = duration.toMillis() / 1000
-    return buildString {
-        if (days != 0L) {
-            append("$days days, ")
-        }
-        if (hours != 0L) {
-            append("$hours hours, ")
-        }
-        if (minutes != 0L) {
-            append("$minutes minutes, ")
-        }
-        if (this.isEmpty()) {
-            append("$seconds seconds")
-        } else {
-            append("and $seconds seconds")
-        }
-    }
-}
+val Event.key: String get() = "competition_${id}"
 
 fun UUID.toBin() : ByteArray {
     val uuidBytes = ByteArray(16)
@@ -100,37 +57,3 @@ fun Player.sendCompetition(message: String) =
             .append(TextComponent.of("]").color(TextColor.DARK_GRAY))
             .append(TextComponent.of(" $message").color(TextColor.GRAY))
     )
-
-fun getNextEventStartTime(dayOfWeek: String, hour: Int, minute: Int): LocalDateTime {
-    val now = LocalDateTime.now()
-    val day = DayOfWeek.valueOf(dayOfWeek.toUpperCase())
-    val firstFriday = LocalDateTime.of(
-        now.year,
-        now.month,
-        now.with(TemporalAdjusters.firstInMonth(day)).dayOfMonth,
-        hour,
-        minute
-    )
-    return if (now.isAfter(firstFriday)) {
-        firstFriday.plusMonths(1).with(TemporalAdjusters.firstInMonth(day))
-    } else {
-        firstFriday
-    }
-}
-
-fun List<UUID>.filterWorldEditUsers(userManager: UserManager, rankName: String) = this
-    .filter { user ->
-        userManager.getUser(user)
-            ?.getInheritedGroups(QueryOptions.nonContextual())
-            ?.any { group -> group.name == rankName } == true
-    }
-
-fun User.removeGroupNode(userManager: UserManager, name: String, context: ContextSet = ImmutableContextSet.empty()) {
-    this.data().remove(InheritanceNode.builder(name).withContext(context).build())
-    userManager.saveUser(this)
-}
-
-fun User.addGroupNode(userManager: UserManager, name: String, context: ContextSet = ImmutableContextSet.empty()) {
-    this.data().add(InheritanceNode.builder(name).withContext(context).build())
-    userManager.saveUser(this)
-}

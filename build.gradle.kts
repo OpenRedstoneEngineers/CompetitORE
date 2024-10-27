@@ -13,7 +13,7 @@ java {
 }
 
 group = ""
-version = "1.0"
+version = "1.1"
 
 repositories {
     mavenCentral()
@@ -25,6 +25,7 @@ repositories {
     maven("https://maven.enginehub.org/repo/")
     maven("https://repo.codemc.org/repository/maven-public/")
     maven("https://libraries.minecraft.net")
+    maven("https://repo.onarandombox.com/content/groups/public/")
 }
 
 dependencies {
@@ -40,6 +41,7 @@ dependencies {
     implementation(group = "mysql", name = "mysql-connector-java", version = "8.0.19")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = "2.11.0")
 
+    compileOnly(group = "com.onarandombox.multiversecore", name = "Multiverse-Core", version = "4.3.1")
     compileOnly(group = "net.luckperms", name = "api", version = "5.2")
     compileOnly(group = "com.comphenix.protocol", name = "ProtocolLib", version = "4.5.0")
     compileOnly(group = "org.spigotmc", name = "spigot-api", version = "1.16.2-R0.1-SNAPSHOT")

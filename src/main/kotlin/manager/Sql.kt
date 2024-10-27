@@ -4,14 +4,11 @@ import entity.Event
 import entity.Sql
 import entity.Team
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.`java-time`.CurrentDateTime
 import org.jetbrains.exposed.sql.transactions.transaction
 import pluginZoneOffset
 import toBin
 import toUuid
-import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.*
 
 class Sql(
@@ -48,19 +45,25 @@ class Sql(
         )
     }
 
-    fun insertEvent(eventDescription: String, eventStart: LocalDateTime, eventEnd: LocalDateTime, size: Int = 1): Event = transaction(database) {
+    fun insertEvent(eventDescription: String, eventStart: LocalDateTime, size: Int = 1): Event = transaction(database) {
         Event(
             Sql.Event.insert {
                 it[description] = eventDescription
                 it[team_size] = size
                 it[start] = eventStart
-                it[end] = eventEnd
             } get Sql.Event.id,
             eventDescription,
             size,
-            eventStart.atOffset(zoneOffset).toInstant(),
-            eventEnd.atOffset(zoneOffset).toInstant()
+            eventStart.atOffset(zoneOffset).toInstant()
         )
+    }
+
+    fun endEvent(id: Int) = transaction(database) {
+        Sql.Event.update({
+            Sql.Event.id eq id
+        }) {
+            it[end] = LocalDateTime.now()
+        }
     }
 
     fun updateEventSize(id: Int, size: Int) = transaction(database) {
@@ -79,18 +82,6 @@ class Sql(
         }
     }
 
-    fun getAllEvents(): List<Event> = transaction(database) {
-        Sql.Event.selectAll().map {
-            Event(
-                it[Sql.Event.id],
-                it[Sql.Event.description],
-                it[Sql.Event.team_size],
-                it[Sql.Event.start].atOffset(zoneOffset).toInstant(),
-                it[Sql.Event.end].atOffset(zoneOffset).toInstant()
-            )
-        }
-    }
-
     fun getEvent(id: Int): Event? = transaction(database) {
         Sql.Event.select {
             Sql.Event.id eq id
@@ -100,7 +91,7 @@ class Sql(
                 it[Sql.Event.description],
                 it[Sql.Event.team_size],
                 it[Sql.Event.start].atOffset(zoneOffset).toInstant(),
-                it[Sql.Event.end].atOffset(zoneOffset).toInstant()
+                it[Sql.Event.end]?.atOffset(zoneOffset)?.toInstant()
             )
         }
     }
@@ -108,42 +99,26 @@ class Sql(
     /* The event that is currently active, null if no event is active */
     fun getActiveEvent(): Event? = transaction(database) {
         Sql.Event.select {
-            Sql.Event.start.less(CurrentDateTime()).and(
-                Sql.Event.end greater CurrentDateTime()
-            )
-        }.firstOrNull()?.let {
+            Sql.Event.end.isNull()
+        }.orderBy(Sql.Event.start to SortOrder.DESC).firstOrNull()?.let {
             Event(
                 it[Sql.Event.id],
                 it[Sql.Event.description],
                 it[Sql.Event.team_size],
                 it[Sql.Event.start].atOffset(zoneOffset).toInstant(),
-                it[Sql.Event.end].atOffset(zoneOffset).toInstant(),
             )
         }
     }
 
-    /* The event that is currently active, next event if inactive */
-    fun getNextEvent(): Event = transaction(database) {
-        getEvent(
-            Sql.Event.selectAll()
-                .orderBy(Sql.Event.id to SortOrder.DESC)
-                .first().let {
-                    it[Sql.Event.id]
-                }
-        )!!
-    }
-
     /* The event that is currently active, last event that took place if inactive */
     fun getLastOrActiveEvent(): Event = transaction(database) {
-        Sql.Event.select {
-            Sql.Event.start.less(CurrentDateTime())
-        }.orderBy(Sql.Event.start to SortOrder.DESC).first().let {
+        Sql.Event.selectAll().orderBy(Sql.Event.start to SortOrder.DESC).first().let {
             Event(
                 it[Sql.Event.id],
                 it[Sql.Event.description],
                 it[Sql.Event.team_size],
                 it[Sql.Event.start].atOffset(zoneOffset).toInstant(),
-                it[Sql.Event.end].atOffset(zoneOffset).toInstant()
+                it[Sql.Event.end]?.atOffset(zoneOffset)?.toInstant()
             )
         }
     }
@@ -224,8 +199,7 @@ class Sql(
             Sql.Competitor.uuid eq uuid.toBin()
         }.orderBy(Sql.Competitor.team_id to SortOrder.DESC).firstOrNull()?.let {
             val team = getTeam(it[Sql.Competitor.team_id]) ?: return@transaction null
-            val now = Instant.now()
-            if (now.isBefore(team.event.start) || now.isAfter(team.event.end)) {
+            if (team.event.end != null) {
                 return@transaction null
             }
             team

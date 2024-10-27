@@ -2,4 +2,4 @@ name: CompetitORE
 version: 1.0
 main: CompetitOre
 api-version: 1.16
-depend: [PlotSquared, LuckPerms]
+depend: [Multiverse-Core, PlotSquared, LuckPerms]

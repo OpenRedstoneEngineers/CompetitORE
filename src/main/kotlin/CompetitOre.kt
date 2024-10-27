@@ -4,6 +4,7 @@ import co.aikar.commands.PaperCommandManager
 import co.aikar.commands.RegisteredCommand
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.onarandombox.MultiverseCore.MultiverseCore
 import com.plotsquared.bukkit.util.BukkitSetupUtils
 import com.plotsquared.core.PlotAPI
 import com.plotsquared.core.PlotSquared
@@ -27,18 +28,16 @@ import manager.PlotEvent
 import manager.Sql
 import net.luckperms.api.LuckPerms
 import net.luckperms.api.LuckPermsProvider
-import net.luckperms.api.context.DefaultContextKeys
-import net.luckperms.api.context.ImmutableContextSet
+import org.bukkit.GameMode
 import org.bukkit.GameRule
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
+import java.time.LocalDateTime
 import java.util.logging.Level
 
 class CompetitOre : JavaPlugin() {
     var plotApi = PlotAPI()
     var config = loadConfig()
-    val serverContext get() = ImmutableContextSet.builder().add(DefaultContextKeys.SERVER_KEY, config.serverName)
-    val competitonContext get() = serverContext.add(DefaultContextKeys.WORLD_KEY, database.getLastOrActiveEvent().key).build()
     val database = Sql(
         config.competitorDatabase.host,
         config.competitorDatabase.port,
@@ -48,6 +47,7 @@ class CompetitOre : JavaPlugin() {
     )
     var activeEvent: Event? = null
     lateinit var luckPerms: LuckPerms
+    lateinit var core: MultiverseCore
 
     override fun onEnable() {
         luckPerms = LuckPermsProvider.get()
@@ -69,17 +69,8 @@ class CompetitOre : JavaPlugin() {
             setDefaultExceptionHandler(::handleCommandException, false)
         }
         luckPerms.contextManager.registerCalculator(CompetitoreCalculator(this))
-        if (database.getAllEvents().isEmpty()) {
-            addNextEvent()
-        }
-        server.scheduler.scheduleSyncRepeatingTask(this, {
-            val event = database.getActiveEvent()
-            if (activeEvent == null && event != null) {
-                startEvent(event)
-            } else if (activeEvent != null && event == null) {
-                stopEvent()
-            }
-        }, 0L, 20L)
+        activeEvent = database.getActiveEvent()
+        core = server.pluginManager.getPlugin("Multiverse-Core") as MultiverseCore
     }
 
     override fun onDisable() {
@@ -90,31 +81,27 @@ class CompetitOre : JavaPlugin() {
         config = loadConfig()
     }
 
-    private fun startEvent(event: Event) {
-        // TODO 1.1: Figure out how to unload the world.
-        ensureCompetitionWorld(event.key)
-        activeEvent = event
+    fun startEvent() {
+        server.worlds.forEach {
+            if (it.name.startsWith("competition_")) {
+                it.players.forEach { player -> player.teleport(server.getWorld("world")!!.spawnLocation) }
+                core.mvWorldManager.removeWorldFromConfig(it.name)
+                plotApi.plotSquared.plotAreaManager.removeWorld(it.name)
+            }
+        }
+        activeEvent = database.insertEvent(
+            "n/a",
+            LocalDateTime.now(),
+            config.event.teamSize
+        )
+        ensureCompetitionWorld(activeEvent!!.key)
         server.onlinePlayers.forEach {
             it.sendCompetition("The ${activeEvent!!.name} competition has started!")
             it.sendCompetition("Join the competition by running \"/comp enter\".")
         }
     }
 
-    private fun addNextEvent() {
-        val nextStart = getNextEventStartTime(
-            config.event.start.dayOfWeek,
-            config.event.start.hour,
-            config.event.start.minute
-        )
-        database.insertEvent(
-            "n/a",
-            nextStart,
-            nextStart.plusHours(config.event.length.toLong()),
-            config.event.teamSize
-        )
-    }
-
-    private fun stopEvent() {
+    fun stopEvent() {
         val competitors = database.getTeamsByEvent(activeEvent!!.id)!!.flatMap { it.members }
         competitors.forEach {
             server.getPlayer(it)?.let { player ->
@@ -122,8 +109,8 @@ class CompetitOre : JavaPlugin() {
                 player.sendCompetition("Judging will now begin and the results are to be announced shortly.")
             }
         }
+        database.endEvent(activeEvent!!.id)
         activeEvent = null
-        addNextEvent()
     }
 
     private fun ensureCompetitionWorld(name: String) {
@@ -184,6 +171,7 @@ class CompetitOre : JavaPlugin() {
                     }
                 }
             }
+            core.mvWorldManager.getMVWorld(eventWorld).setGameMode(GameMode.CREATIVE)
             eventWorld.time = 6000L
         }, 300L)
     }
