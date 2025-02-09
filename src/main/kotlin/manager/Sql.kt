@@ -17,13 +17,13 @@ class Sql(
     database: String,
     user: String,
     password: String,
-    driver: String = "com.mysql.cj.jdbc.Driver"
+    driver: String = "org.mariadb.jdbc.Driver"
 ) {
 
     private val zoneOffset = pluginZoneOffset
 
     private val database = Database.connect(
-        "jdbc:mysql://${host}:${port}/${database}",
+        "jdbc:mariadb://${host}:${port}/${database}",
         driver = driver,
         user = user,
         password = password

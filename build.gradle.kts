@@ -38,7 +38,7 @@ dependencies {
     implementation(group = "org.jetbrains.exposed", name = "exposed-jdbc", version = "0.30.1")
     implementation(group = "org.jetbrains.exposed", name = "exposed-java-time", version = "0.30.1")
     implementation(group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version = "2.14.3")
-    implementation(group = "mysql", name = "mysql-connector-java", version = "8.0.19")
+    implementation(group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.1")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = "2.11.0")
 
     compileOnly(group = "com.onarandombox.multiversecore", name = "Multiverse-Core", version = "4.3.1")
